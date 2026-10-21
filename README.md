@@ -5,7 +5,10 @@ Personal dashboard for a 20%-per-session compounding plan on a US stock portfoli
 
 - Log the portfolio balance after each session; the page checks it against the
   20% target from your previous balance and against the plan schedule.
-- Everything runs in the browser. Balances are saved in this browser's local
-  storage only, never in this repository. Use "Export backup" to move them to
-  another device.
+- Balances sync across devices through a private Supabase database. Each device
+  is linked once with a secret sync link (QR code in "Sync & backup"); only a
+  hash of that secret is stored, and the tables are closed to the public API.
+  Nothing personal is stored in this repository.
+- Every change is also kept in the browser first, so the page works offline and
+  uploads when the connection is back.
 - Settings (start capital, dates, daily %, holiday handling) are editable in the page.

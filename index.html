@@ -210,6 +210,17 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--page);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:all .2s;z-index:60;max-width:calc(100vw - 32px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .data-actions{display:flex;gap:8px;flex-wrap:wrap}
+.sync-status{display:flex;gap:10px;align-items:flex-start;background:var(--page);border-radius:10px;padding:12px;margin-bottom:12px;font-size:14px}
+.sync-status .dot{margin-top:6px}
+.dot.ok{background:var(--good)} .dot.busy{background:var(--accent)} .dot.err{background:var(--bad)} .dot.warn{background:var(--warn)}
+.pair{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;border:1px dashed var(--line);border-radius:12px;padding:14px;margin:12px 0}
+@media (max-width:520px){.pair{grid-template-columns:minmax(0,1fr)}}
+.qr{background:#fff;border-radius:10px;padding:8px;width:184px;height:184px;display:flex;align-items:center;justify-content:center}
+.qr svg{width:168px;height:168px;display:block}
+.linkrow{display:flex;gap:8px;margin-top:8px}
+.linkrow .field{font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.chip.click{cursor:pointer}
+.divider{height:1px;background:var(--line);margin:14px 0}
 footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
@@ -223,6 +234,7 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
       <p class="sub" id="hdrSub">—</p>
     </div>
     <div class="hdr-actions">
+      <span class="chip click" id="syncChip" role="button" tabindex="0" title="Sync status"><span class="dot"></span><span>—</span></span>
       <span class="chip" id="mktChip"><span class="dot"></span><span>—</span></span>
       <button class="btn sm ghost" id="themeBtn" title="Switch theme">Theme: Auto</button>
       <button class="btn sm" id="settingsBtn">Settings</button>
@@ -318,9 +330,29 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
       <div class="tbl-wrap tall" id="schedWrap"><table id="schedTbl"></table></div>
     </section>
 
-    <!-- Data -->
-    <section class="card">
-      <div class="card-h"><h2>Your data</h2><p id="dataNote">—</p></div>
+    <!-- Sync + data -->
+    <section class="card" id="syncCard">
+      <div class="card-h"><h2>Sync &amp; backup</h2><p id="dataNote">—</p></div>
+      <div class="sync-status" id="syncStatus"><span class="dot"></span><div>—</div></div>
+      <div class="data-actions" id="syncActions">
+        <button class="btn sm" type="button" id="syncNow">Sync now</button>
+        <button class="btn sm" type="button" id="pairBtn">Link another device</button>
+        <button class="btn sm ghost" type="button" id="unlinkBtn">Unlink this device</button>
+      </div>
+      <div class="pair" id="pairBox" hidden>
+        <div class="qr" id="qrBox" aria-label="QR code with this device's sync link"></div>
+        <div>
+          <p style="font-weight:600">Scan with your phone's camera</p>
+          <p class="small muted" style="margin-top:4px">It opens this tracker already linked to the same data. Anyone with this link can see and edit your tracker, so only open it on your own devices.</p>
+          <div class="linkrow"><input class="field" id="pairLink" readonly aria-label="Sync link"><button class="btn sm" type="button" id="copyLink">Copy</button></div>
+        </div>
+      </div>
+      <div id="linkBox" hidden>
+        <label class="lbl" for="linkIn">Paste your sync link or code</label>
+        <div class="linkrow" style="margin-top:0"><input class="field" id="linkIn" placeholder="https://…#k=…" autocomplete="off"><button class="btn sm primary" type="button" id="linkGo">Link</button></div>
+        <p class="small muted" style="margin-top:6px">Get it from a linked device: Sync &amp; backup → Link another device.</p>
+      </div>
+      <div class="divider"></div>
       <div class="data-actions">
         <button class="btn sm" type="button" id="expJson">Export backup (.json)</button>
         <button class="btn sm" type="button" id="impJson">Import backup</button>
@@ -328,7 +360,7 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
         <button class="btn sm danger" type="button" id="clearAll">Clear all entries</button>
         <input type="file" id="impFile" accept="application/json,.json" hidden>
       </div>
-      <p class="small muted" style="margin-top:12px">Entries are saved only in this browser on this device. To use another device, export a backup here and import it there.</p>
+      <p class="small muted" style="margin-top:12px" id="dataFoot">—</p>
     </section>
   </div>
 
@@ -364,6 +396,9 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 
 /* ---------- constants ---------- */
 var KEY='compound20.data.v1', THEME_KEY='compound20.theme', SCALE_KEY='compound20.scale', RANGE_KEY='compound20.range';
+var SYNC_KEY='compound20.sync.v1', PEND_KEY='compound20.pending.v1';
+var SB_URL='https://wmuiiytcnpltqlzztonj.supabase.co', SB_KEY='sb_publishable_f0ApOBS8PU3Zl0vpH7ek5g_xzIS1a0h';
+var QR_SRC='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js', QR_SRI='sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1';
 var DEFAULTS={startCapital:154,startDate:'2026-10-19',endDate:'2026-12-31',dailyTarget:20,skipHolidays:true};
 var HOLIDAYS={
   '2026-01-01':"New Year's Day",'2026-01-19':'Martin Luther King Jr. Day','2026-02-16':"Presidents' Day",'2026-04-03':'Good Friday',
@@ -407,6 +442,11 @@ function load(){
   return {settings:Object.assign({},DEFAULTS),entries:{}};
 }
 var S=load();
+function loadJSON(k,def){ try{ var r=sget(k); return r?JSON.parse(r):def; }catch(e){ return def; } }
+var SY=loadJSON(SYNC_KEY,{}); if(!SY||typeof SY!=='object') SY={};
+var PD=loadJSON(PEND_KEY,{}); if(!PD||typeof PD!=='object') PD={}; if(!PD.ops||typeof PD.ops!=='object') PD.ops={}; PD.setVer=PD.setVer|0; PD.setSent=PD.setSent|0;
+function saveSY(){ sset(SYNC_KEY,JSON.stringify(SY)); }
+function savePD(){ sset(PEND_KEY,JSON.stringify(PD)); }
 function persist(){ if(!sset(KEY,JSON.stringify({app:'compound-tracker',version:1,settings:S.settings,entries:S.entries,savedAt:new Date().toISOString()}))&&store) toast('Could not save to browser storage'); }
 
 /* ---------- date + format helpers ---------- */
@@ -604,14 +644,14 @@ $('logForm').addEventListener('submit',function(e){
   var v=Number($('balIn').value);
   if(!selDate){ return; }
   if($('balIn').value===''||!isFinite(v)||v<0){ toast('Enter a valid balance'); $('balIn').focus(); return; }
-  S.entries[selDate]=Math.round(v*100)/100; persist();
+  setEntry(selDate,v);
   var d=selDate; refresh(true);
   var x=M.sessions.find(function(y){return y.date===d;});
   toast('Saved Day '+x.idx+' · '+usd(x.actual)+' — '+(x.hit?'✓ target hit ('+pct(x.ret)+')':'✗ missed by '+usd(x.gap)));
 });
 $('delBtn').addEventListener('click',function(){
   if(!selDate||S.entries[selDate]==null) return;
-  delete S.entries[selDate]; persist(); refresh(true); toast('Entry deleted');
+  delEntry(selDate); refresh(true); toast('Entry deleted');
 });
 function selectSession(date){
   if(!M.sessions.some(function(x){return x.date===date;})) return;
@@ -943,6 +983,7 @@ function renderData(){
   var n=Object.keys(S.entries).length, inRange=M.logged, outside=n-inRange;
   $('dataNote').textContent=plural(n,'entry')+' saved'+(outside>0?' · '+outside+' outside the current plan range (kept, not shown)':'');
   $('storageBanner').hidden=!!store;
+  renderSync();
 }
 function download(name,text,type){
   var b=new Blob([text],{type:type}), a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click();
@@ -959,8 +1000,8 @@ $('impFile').addEventListener('change',function(){
     try{
       var o=JSON.parse(rd.result), ents=cleanEntries(o.entries||o);
       if(!Object.keys(ents).length&&!o.settings) throw new Error('empty');
-      if(o.settings) S.settings=cleanSettings(o.settings);
-      S.entries=Object.assign({},S.entries,ents); persist(); refresh(false);
+      if(o.settings) setSettings(cleanSettings(o.settings));
+      Object.keys(ents).forEach(function(d){ setEntry(d,ents[d]); }); refresh(false);
       toast('Imported '+plural(Object.keys(ents).length,'entry'));
     }catch(e){ toast('That file is not a valid backup'); }
   };
@@ -978,8 +1019,8 @@ $('expCsv').addEventListener('click',function(){
 });
 $('clearAll').addEventListener('click',function(){
   if(!Object.keys(S.entries).length){ toast('Nothing to clear'); return; }
-  if(!window.confirm('Delete all '+Object.keys(S.entries).length+' logged balances from this browser? Export a backup first if you might need them.')) return;
-  S.entries={}; persist(); refresh(false); toast('All entries cleared');
+  if(!window.confirm('Delete all '+Object.keys(S.entries).length+' logged balances'+(SY.key?' on every linked device':' from this browser')+'? Export a backup first if you might need them.')) return;
+  Object.keys(S.entries).forEach(function(d){ delEntry(d); }); refresh(false); toast('All entries cleared');
 });
 
 /* ---------- settings ---------- */
@@ -996,8 +1037,7 @@ $('setSave').addEventListener('click',function(){
   else if(b<a) err='Goal date must be after the first session.';
   else if((parseD(b)-parseD(a))/DAY>800) err='Keep the range under about two years.';
   if(err){ $('setErr').textContent=err; return; }
-  S.settings={startCapital:Math.round(cap*100)/100,dailyTarget:rate,startDate:a,endDate:b,skipHolidays:$('sHol').checked};
-  persist(); dlg.close?dlg.close():dlg.removeAttribute('open'); refresh(false); toast('Plan updated');
+  setSettings({startCapital:Math.round(cap*100)/100,dailyTarget:rate,startDate:a,endDate:b,skipHolidays:$('sHol').checked}); dlg.close?dlg.close():dlg.removeAttribute('open'); refresh(false); toast('Plan updated');
 });
 
 /* ---------- scale toggle ---------- */
@@ -1016,6 +1056,129 @@ document.querySelectorAll('[data-range]').forEach(function(b){
 });
 syncRangeBtns();
 
+
+/* ---------- cloud sync (Supabase) ---------- */
+var syncing=false, syncAgain=false, syncTimer=null, retryMs=0, SS={st:'off',msg:''};
+function setEntry(date,v){ v=Math.round(Number(v)*100)/100; S.entries[date]=v; PD.ops[date]={balance:v}; savePD(); persist(); scheduleSync(); }
+function delEntry(date){ delete S.entries[date]; PD.ops[date]={del:true}; savePD(); persist(); scheduleSync(); }
+function setSettings(st){ S.settings=st; PD.setVer=(PD.setVer|0)+1; savePD(); persist(); scheduleSync(); }
+function pendingCount(){ return Object.keys(PD.ops).length+((PD.setVer|0)>(PD.setSent|0)?1:0); }
+function scheduleSync(ms){ if(!SY.key) { renderSync(); return; } clearTimeout(syncTimer); syncTimer=setTimeout(doSync,ms==null?350:ms); }
+function rpc(body){
+  var ctl=window.AbortController?new AbortController():null, t=ctl?setTimeout(function(){ctl.abort();},15000):null;
+  return fetch(SB_URL+'/rest/v1/rpc/tracker_sync',{method:'POST',cache:'no-store',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined})
+    .then(function(r){ return r.text().then(function(tx){ var j=null; try{ j=JSON.parse(tx); }catch(e){}
+      if(!r.ok){ var er=new Error((j&&j.message)||('HTTP '+r.status)); er.code=j&&j.code; er.status=r.status; throw er; } return j; }); })
+    .finally(function(){ if(t) clearTimeout(t); });
+}
+function applyRemote(res){
+  var before=JSON.stringify([S.entries,S.settings]), e={};
+  (res&&res.entries||[]).forEach(function(r){ if(r&&!r.del&&r.balance!=null&&ISO.test(r.date)&&isFinite(+r.balance)) e[r.date]=Math.round(+r.balance*100)/100; });
+  Object.keys(PD.ops).forEach(function(d){ var o=PD.ops[d]; if(o.del) delete e[d]; else e[d]=o.balance; });
+  S.entries=e;
+  if(res&&res.settings&&typeof res.settings==='object'&&(PD.setVer|0)<=(PD.setSent|0)) S.settings=cleanSettings(res.settings);
+  persist();
+  return JSON.stringify([S.entries,S.settings])!==before;
+}
+function doSync(){
+  if(!SY.key){ setSS('off'); return Promise.resolve(); }
+  if(syncing){ syncAgain=true; return Promise.resolve(); }
+  syncing=true; setSS('busy');
+  var first=!SY.firstDone;
+  var p=first?rpc({p_key:SY.key,p_ops:[],p_settings:null}).then(function(res){
+      // First link on this device: upload what only this device has; the cloud wins on conflicts.
+      var remote={}; (res.entries||[]).forEach(function(r){ remote[r.date]=r; });
+      Object.keys(S.entries).forEach(function(d){ if(!remote[d]&&!PD.ops[d]) PD.ops[d]={balance:S.entries[d]}; });
+      if(!res.settings) PD.setVer=(PD.setSent|0)+1;
+      else if((PD.setVer|0)>(PD.setSent|0)) PD.setSent=PD.setVer; // adopt cloud settings
+      savePD(); return res;
+    }):Promise.resolve(null);
+  return p.then(function(){
+    var sent={}; Object.keys(PD.ops).forEach(function(d){ sent[d]=JSON.stringify(PD.ops[d]); });
+    var ops=Object.keys(sent).map(function(d){ return Object.assign({date:d},PD.ops[d]); });
+    var setV=PD.setVer|0, sendSet=setV>(PD.setSent|0);
+    return rpc({p_key:SY.key,p_ops:ops,p_settings:sendSet?S.settings:null}).then(function(res){
+      Object.keys(sent).forEach(function(d){ if(PD.ops[d]&&JSON.stringify(PD.ops[d])===sent[d]) delete PD.ops[d]; });
+      if(sendSet) PD.setSent=Math.max(PD.setSent|0,setV);
+      savePD();
+      var changed=applyRemote(res);
+      SY.firstDone=true; SY.last=new Date().toISOString(); SY.err=null; saveSY();
+      retryMs=0; setSS('ok');
+      if(changed) refresh(true); else renderSync();
+    });
+  }).catch(function(e){
+    if(e&&e.code==='28000'){ SY.err='badkey'; saveSY(); setSS('badkey'); }
+    else { setSS('err',(navigator.onLine===false)?'You are offline':((e&&e.name==='AbortError')?'Timed out':(e&&e.message)||'Network error'));
+      retryMs=Math.min(retryMs?retryMs*2:15000,300000); scheduleSync(retryMs); }
+  }).finally(function(){
+    syncing=false;
+    if(syncAgain){ syncAgain=false; scheduleSync(50); }
+  });
+}
+function setSS(st,msg){ SS={st:st,msg:msg||''}; renderSync(); }
+function hhmm(iso){ try{ var d=new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(new Date().toDateString()===d.toDateString()?'':' '+d.toLocaleDateString([], {month:'short',day:'numeric'})); }catch(e){ return ''; } }
+function renderSync(){
+  if(!$('syncStatus')) return;
+  var linked=!!SY.key, pc=pendingCount(), st=SS.st, dot='', head='', sub='', chip='';
+  if(!linked){ dot='warn'; head='Not linked — saved on this device only'; sub='Link this device to keep the same data on your phone and PC.'; chip='Not synced'; }
+  else if(SY.err==='badkey'||st==='badkey'){ dot='err'; head='This sync link is not recognised'; sub='Unlink this device and open the link again from a device that syncs.'; chip='Sync error'; }
+  else if(st==='busy'){ dot='busy'; head='Syncing…'; sub=pc?plural(pc,'change')+' uploading':'Checking for updates'; chip='Syncing…'; }
+  else if(st==='err'){ dot='err'; head='Not synced right now'; sub=(SS.msg?SS.msg+'. ':'')+(pc?plural(pc,'change')+' saved on this device and will upload automatically.':'Will retry automatically.'); chip=pc?plural(pc,'unsynced change'):'Offline'; }
+  else { dot=pc?'busy':'ok'; head=pc?plural(pc,'change')+' waiting to upload':'Synced to your private cloud'; sub=SY.last?'Last synced '+hhmm(SY.last)+' · same data on every linked device':'Connecting…'; chip=pc?'Uploading…':'Synced'+(SY.last?' '+hhmm(SY.last):''); }
+  var ss=$('syncStatus'); ss.querySelector('.dot').className='dot '+dot;
+  ss.lastElementChild.innerHTML='<b>'+esc(head)+'</b><div class="small muted">'+esc(sub)+'</div>';
+  var c=$('syncChip'); c.querySelector('.dot').className='dot '+dot; c.lastChild.textContent=chip;
+  $('syncNow').hidden=!linked; $('pairBtn').hidden=!linked; $('unlinkBtn').hidden=!linked;
+  $('linkBox').hidden=linked; if(!linked) $('pairBox').hidden=true;
+  $('dataFoot').textContent=linked?'Every change is saved on this device first and uploaded to your private database, so it also works offline. Backups (.json) are an extra copy.':'Without a link, entries live only in this browser. Export a backup to move them by hand.';
+}
+function pairLink(){ return location.origin+location.pathname+'#k='+SY.key; }
+function showPair(){
+  var box=$('pairBox'); if(!box.hidden){ box.hidden=true; return; }
+  $('pairLink').value=pairLink(); box.hidden=false;
+  var q=$('qrBox'); q.textContent='Loading QR…';
+  function draw(){ try{ var qr=window.qrcode(0,'M'); qr.addData(pairLink()); qr.make(); q.innerHTML=qr.createSvgTag({cellSize:4,margin:2,scalable:true}); }catch(e){ q.textContent='QR unavailable — use Copy'; } }
+  if(window.qrcode) draw(); else {
+    var sc=document.createElement('script'); sc.src=QR_SRC; sc.integrity=QR_SRI; sc.crossOrigin='anonymous'; sc.referrerPolicy='no-referrer';
+    sc.onload=draw; sc.onerror=function(){ q.textContent='QR unavailable — use Copy'; }; document.head.appendChild(sc);
+  }
+}
+function parseKey(str){
+  str=String(str||'').trim(); var m=str.match(/[#&?]k=([A-Za-z0-9_-]{32,200})/); if(m) return m[1];
+  return /^[A-Za-z0-9_-]{32,200}$/.test(str)?str:null;
+}
+function linkWith(key){
+  if(SY.key===key&&SY.firstDone){ toast('This device is already linked'); doSync(); return; }
+  SY={key:key,firstDone:false,last:null,err:null}; saveSY(); renderSync(); toast('Linking this device…');
+  doSync().then(function(){ if(SY.firstDone) toast('Linked ✓ — '+plural(Object.keys(S.entries).length,'entry')+' in sync'); });
+}
+$('syncNow').addEventListener('click',function(){ doSync(); });
+$('pairBtn').addEventListener('click',showPair);
+$('copyLink').addEventListener('click',function(){
+  var v=pairLink(), done=function(){ toast('Link copied'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done,function(){ $('pairLink').select(); document.execCommand('copy'); done(); });
+  else { $('pairLink').select(); document.execCommand('copy'); done(); }
+});
+$('unlinkBtn').addEventListener('click',function(){
+  if(pendingCount()&&!window.confirm(plural(pendingCount(),'change')+' have not uploaded yet and will stay only on this device. Unlink anyway?')) return;
+  if(!pendingCount()&&!window.confirm('Unlink this device? Your entries stay here, but stop syncing.')) return;
+  SY={}; saveSY(); $('pairBox').hidden=true; setSS('off'); toast('This device is unlinked');
+});
+$('linkGo').addEventListener('click',function(){ var k=parseKey($('linkIn').value); if(!k){ toast('That is not a valid sync link or code'); return; } $('linkIn').value=''; linkWith(k); });
+$('syncChip').addEventListener('click',function(){ $('syncCard').scrollIntoView({behavior:'smooth',block:'start'}); });
+$('syncChip').addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('syncCard').scrollIntoView({behavior:'smooth',block:'start'}); } });
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&SY.key) scheduleSync(100); });
+window.addEventListener('online',function(){ if(SY.key){ retryMs=0; scheduleSync(100); } });
+window.addEventListener('focus',function(){ if(SY.key) scheduleSync(300); });
+setInterval(function(){ if(SY.key&&document.visibilityState==='visible'&&!syncing) doSync(); },45000);
+function takeHashKey(){ // pairing link: #k=<key>
+  var k=parseKey(location.hash);
+  if(k){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; } linkWith(k); return true; }
+  return false;
+}
+window.addEventListener('hashchange',takeHashKey);
+if(!takeHashKey()&&SY.key) scheduleSync(50);
+
 /* ---------- orchestrate ---------- */
 function drawCharts(){ drawBalance(); drawReturns(); }
 function refresh(keepSel){
@@ -1031,7 +1194,11 @@ if(window.matchMedia) try{ window.matchMedia('(prefers-color-scheme: dark)').add
 // keep the clock and "today" fresh
 setInterval(function(){ var before=M.ny.date+'|'+M.elapsed+'|'+M.started; var ny=nyNow(); M.ny=ny; renderHeader();
   var nm=model(); if(nm.ny.date+'|'+nm.elapsed+'|'+nm.started!==before) refresh(true); },60000);
-window.addEventListener('storage',function(e){ if(e.key===KEY){ S=load(); refresh(true); } });
+window.addEventListener('storage',function(e){
+  if(e.key===KEY){ S=load(); refresh(true); }
+  else if(e.key===SYNC_KEY){ SY=loadJSON(SYNC_KEY,{})||{}; renderSync(); }
+  else if(e.key===PEND_KEY){ PD=loadJSON(PEND_KEY,{ops:{}})||{ops:{}}; if(!PD.ops) PD.ops={}; }
+});
 })();
 </script>
 </body>
