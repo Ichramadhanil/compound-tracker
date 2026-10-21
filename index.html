@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Compound Tracker</title>
-<meta name="description" content="Daily 20% compounding plan vs. actual portfolio balance tracker.">
+<title>Road to $1M</title>
+<meta name="description" content="Dynamic daily target to reach $1M by Dec 31: daily % gains, win/loss trades, journal and monthly reviews.">
 <meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -48,6 +48,7 @@
   --shadow:none;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{background:var(--page);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
@@ -223,6 +224,52 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .divider{height:1px;background:var(--line);margin:14px 0}
 footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* ---- v2 additions ---- */
+.unit{position:relative;display:flex;gap:6px}
+.unit .field{padding-right:30px}
+.unit .suffix{position:absolute;right:58px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.unit .btn{flex:none;padding:8px 12px;font-size:16px;line-height:1}
+.wl2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+details.notes{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--page)}
+details.notes summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none}
+details.notes summary::-webkit-details-marker{display:none}
+details.notes summary::before{content:"▸";display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+details.notes[open] summary::before{transform:rotate(90deg)}
+details.notes .nf{display:grid;gap:8px;margin-top:10px}
+textarea.field{resize:vertical;min-height:54px;font-size:14px;line-height:1.4}
+.status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:600}
+.status-pill.ok{background:var(--good-wash);color:var(--good-ink)}
+.status-pill.mid{background:var(--warn-wash);color:var(--warn-ink)}
+.status-pill.bad{background:var(--bad-wash);color:var(--bad-ink)}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.statgrid > div{background:var(--page);border-radius:10px;padding:10px 12px;min-width:0}
+.statgrid .k{font-size:12px;color:var(--ink-2)}
+.statgrid .v{font-size:17px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+.statgrid .s{font-size:12px;color:var(--muted);margin-top:1px}
+.sec-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px}
+.sec-title:first-child{margin-top:0}
+.review{font-size:14px;line-height:1.55}
+.review h4{font-size:14px;margin:12px 0 4px}
+.review h4:first-child{margin-top:0}
+.review ul{margin:4px 0 8px;padding-left:18px}
+.review li{margin:2px 0}
+.review p{margin:0 0 8px}
+.empty-note{border:1px dashed var(--line);border-radius:10px;padding:14px;color:var(--muted);font-size:13.5px}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.tag{display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12.5px}
+.tag b{font-weight:600}
+.tag span{color:var(--muted);font-size:11.5px}
+.ht{color:var(--accent);font-weight:500}
+.jitem{border-top:1px solid var(--line);padding:12px 0;display:grid;gap:6px}
+.jitem:first-child{border-top:0;padding-top:0}
+.jhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between}
+.jhead b{font-size:14px}
+.jnote{font-size:13.5px;line-height:1.45}
+.jnote span.l{display:inline-block;min-width:92px;color:var(--ink-2);font-size:12px;font-weight:600}
+.cell .pc{font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cell .nd{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.scen td:first-child{font-weight:600}
+.warnline{font-size:13px;color:var(--warn-ink);background:var(--warn-wash);border-radius:8px;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -230,7 +277,7 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 
   <header class="hdr">
     <div>
-      <h1>Compound Tracker · US Equities</h1>
+      <h1>Road to $1M · US Equities</h1>
       <p class="sub" id="hdrSub">—</p>
     </div>
     <div class="hdr-actions">
@@ -248,17 +295,33 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
     <!-- Log + verdict -->
     <section class="row2">
       <div class="card" id="logCard">
-        <div class="card-h"><h2>Log balance</h2><p>Portfolio value at the close of a session</p></div>
+        <div class="card-h"><h2>Log session</h2><p>Your % gain for the day, trades and notes</p></div>
         <form class="logform" id="logForm" autocomplete="off">
-          <div>
+          <div class="full">
             <label class="lbl" for="sessSel">Session</label>
             <select class="field" id="sessSel"></select>
           </div>
           <div>
-            <label class="lbl" for="balIn">Balance (USD)</label>
-            <div class="money"><span>$</span><input class="field num" id="balIn" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+            <label class="lbl" for="pctIn">Gain today (%)</label>
+            <div class="unit">
+              <input class="field num" id="pctIn" type="text" inputmode="decimal" placeholder="e.g. 12.5" aria-describedby="preview">
+              <span class="suffix">%</span>
+              <button class="btn" type="button" id="signBtn" title="Switch between gain and loss" aria-label="Switch sign">±</button>
+            </div>
+          </div>
+          <div class="wl2">
+            <div><label class="lbl" for="winIn">Win trades</label><input class="field num" id="winIn" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 3"></div>
+            <div><label class="lbl" for="lossIn">Lost trades</label><input class="field num" id="lossIn" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 1"></div>
           </div>
           <div class="preview full" id="preview" aria-live="polite">—</div>
+          <details class="notes full" id="notesBox">
+            <summary>Journal notes <span class="small muted" style="font-weight:400">· optional · add #tags to group them</span></summary>
+            <div class="nf">
+              <div><label class="lbl" for="nP">Pattern recognized</label><textarea class="field" id="nP" rows="2" maxlength="4000" placeholder="e.g. #bullflag on 5m after news, #vwap reclaim"></textarea></div>
+              <div><label class="lbl" for="nL">What made trades lose</label><textarea class="field" id="nL" rows="2" maxlength="4000" placeholder="e.g. #fomo entry near the high, moved my stop"></textarea></div>
+              <div><label class="lbl" for="nW">What made trades win</label><textarea class="field" id="nW" rows="2" maxlength="4000" placeholder="e.g. waited for the #pullback, took profit at 2R"></textarea></div>
+            </div>
+          </details>
           <div class="form-actions full">
             <button class="btn primary" type="submit" id="saveBtn">Save</button>
             <button class="btn danger sm" type="button" id="delBtn" hidden>Delete entry</button>
@@ -275,30 +338,62 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
     <!-- Balance chart -->
     <section class="card">
       <div class="card-h">
-        <div><h2 id="balTitle">Balance vs. 20% plan</h2><p>Each point is a session close. Log scale shows compounding as a straight line.</p></div>
+        <div><h2>Balance vs. path to $1M</h2><p>Balance is calculated from your daily %. Dotted line: the path you need from today.</p></div>
         <div class="ctl">
-          <div class="legend"><span><i style="border-color:var(--accent)"></i>Actual</span><span><i style="border-color:var(--plan);border-top-style:dashed"></i>Plan</span></div>
+          <div class="legend"><span><i style="border-color:var(--accent)"></i>Actual</span><span><i style="border-color:var(--plan);border-top-style:dashed"></i>Ideal from start</span><span><i style="border-color:var(--accent);border-top-style:dotted"></i>Needed from now</span></div>
           <div class="seg" role="group" aria-label="Range"><button type="button" data-range="near">To date</button><button type="button" data-range="all">Full plan</button></div>
-          <div class="seg" role="group" aria-label="Scale"><button type="button" data-scale="log" aria-pressed="true">Log</button><button type="button" data-scale="linear" aria-pressed="false">Linear</button></div>
+          <div class="seg" role="group" aria-label="Scale"><button type="button" data-scale="log">Log</button><button type="button" data-scale="linear">Linear</button></div>
         </div>
       </div>
       <div class="chart" id="balChart"></div>
     </section>
 
-    <!-- Returns chart -->
+    <!-- Daily % chart -->
     <section class="card">
       <div class="card-h">
-        <div><h2 id="retTitle">Daily return vs. 20% target</h2><p>Return from your previous logged balance. Gaps are spread evenly over skipped sessions.</p></div>
-        <div class="ctl"><div class="legend"><span><i class="sq" style="background:var(--good)"></i>Hit</span><span><i class="sq" style="background:var(--bad)"></i>Missed</span><span><i style="border-color:var(--ink-2);border-top-style:dashed"></i>Target</span></div>
+        <div><h2>Daily gain vs. dynamic target</h2><p>The target line is recalculated every day from your balance, the $1M goal and the sessions left.</p></div>
+        <div class="ctl"><div class="legend"><span><i class="sq" style="background:var(--good)"></i>Hit</span><span><i class="sq" style="background:var(--bad)"></i>Missed</span><span><i style="border-color:var(--ink-2)"></i>Target %</span></div>
         <div class="seg" role="group" aria-label="Range"><button type="button" data-range="near">To date</button><button type="button" data-range="all">Full plan</button></div></div>
       </div>
-      <div class="chart" id="retChart"></div>
-      <div class="statrow" id="statRow"></div>
+      <div class="chart" id="pctChart"></div>
+    </section>
+
+    <!-- Stats + scenarios -->
+    <section class="row2b">
+      <div class="card">
+        <div class="card-h"><h2>Win / loss trades</h2><p id="wlNote">Wins above the line, losses below</p></div>
+        <div class="chart" id="wlChart" style="min-height:160px"></div>
+        <div class="statrow" id="wlStats"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>What-if: daily % from here</h2><p id="scenNote">—</p></div>
+        <div class="tbl-wrap"><table id="scenTbl" class="scen"></table></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Performance statistics</h2><p>Am I still on track, and what does it take?</p></div>
+      <div id="statGrid"></div>
+    </section>
+
+    <!-- Journal -->
+    <section class="card" id="journalCard">
+      <div class="card-h">
+        <div><h2>Journal &amp; monthly review</h2><p>Your notes per session, summarized every month</p></div>
+        <div class="seg" role="group" aria-label="Month" id="monthSeg"></div>
+      </div>
+      <div class="row2b" style="gap:20px">
+        <div><div class="sec-title">Claude's monthly review</div><div id="aiReview"></div></div>
+        <div><div class="sec-title">Auto summary</div><div id="autoSum"></div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="sec-title">Entries</div>
+      <div id="jList"></div>
     </section>
 
     <!-- Weekly -->
     <section class="card">
-      <div class="card-h"><h2>Weekly targets</h2><p id="weekNote">—</p></div>
+      <div class="card-h"><h2>Weekly</h2><p id="weekNote">—</p></div>
       <div class="tbl-wrap"><table id="weekTbl"></table></div>
     </section>
 
@@ -308,15 +403,16 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
         <div class="card-h"><h2>Session calendar</h2><p>Click a day to log or edit it</p></div>
         <div class="cal" id="cal"></div>
         <div class="cal-legend">
-          <span><i style="background:var(--good-wash)"></i>Hit</span>
+          <span><i style="background:var(--good-wash)"></i>Target hit</span>
           <span><i style="background:var(--bad-wash)"></i>Missed</span>
           <span><i style="background:var(--warn-wash)"></i>Not logged</span>
           <span><i></i>Upcoming</span>
           <span><i style="background:repeating-linear-gradient(135deg,transparent 0 3px,var(--axis) 3px 4px)"></i>Market closed</span>
+          <span><i style="background:var(--accent);border-radius:50%;width:8px;height:8px"></i>Has notes</span>
         </div>
       </div>
       <div class="card">
-        <div class="card-h"><h2>Milestones</h2><p>When the plan reaches each level, and when you did</p></div>
+        <div class="card-h"><h2>Milestones</h2><p>On the ideal path, and when you got there</p></div>
         <div class="tbl-wrap"><table id="msTbl"></table></div>
       </div>
     </section>
@@ -370,14 +466,15 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 <dialog id="setDlg">
   <form method="dialog" id="setForm">
     <div class="dlg-b">
-      <h2>Plan settings</h2>
+      <h2>Goal settings</h2>
       <div class="dlg-grid">
+        <div><label class="lbl" for="sGoal">Goal balance (USD)</label><div class="money"><span>$</span><input class="field num" id="sGoal" type="number" step="1" min="1" required></div></div>
         <div><label class="lbl" for="sCap">Starting capital (USD)</label><div class="money"><span>$</span><input class="field num" id="sCap" type="number" step="0.01" min="0.01" required></div></div>
-        <div><label class="lbl" for="sRate">Daily target (%)</label><input class="field num" id="sRate" type="number" step="0.1" min="0.1" max="500" required></div>
         <div><label class="lbl" for="sStart">First session</label><input class="field" id="sStart" type="date" required></div>
         <div><label class="lbl" for="sEnd">Goal date</label><input class="field" id="sEnd" type="date" required></div>
       </div>
-      <label class="check"><input type="checkbox" id="sHol"><span>Skip US market holidays<br><span class="small muted">No target on days NYSE is closed (e.g. Thanksgiving, Christmas)</span></span></label>
+      <label class="check"><input type="checkbox" id="sHol"><span>Skip US market holidays<br><span class="small muted">No session on days NYSE is closed (e.g. Thanksgiving, Christmas)</span></span></label>
+      <p class="small muted">The daily target is not fixed: each day it is recalculated as the % per session needed to grow your current balance to the goal by the goal date.</p>
       <p class="small muted" id="setErr" role="alert"></p>
     </div>
     <div class="dlg-f">
@@ -395,11 +492,11 @@ footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
 'use strict';
 
 /* ---------- constants ---------- */
-var KEY='compound20.data.v1', THEME_KEY='compound20.theme', SCALE_KEY='compound20.scale', RANGE_KEY='compound20.range';
-var SYNC_KEY='compound20.sync.v1', PEND_KEY='compound20.pending.v1';
-var SB_URL='https://wmuiiytcnpltqlzztonj.supabase.co', SB_KEY='sb_publishable_f0ApOBS8PU3Zl0vpH7ek5g_xzIS1a0h';
+var KEY='compound20.data.v2', KEY_V1='compound20.data.v1', THEME_KEY='compound20.theme', SCALE_KEY='compound20.scale', RANGE_KEY='compound20.range';
+var SYNC_KEY='compound20.sync.v1', PEND_KEY='compound20.pending.v2';
+var SB_URL='https://wmuiiytcnpltqlzztonj.supabase.co', SB_KEY='sb_publishable_f0ApOBS8PU3Zl0vpH7ek5g_xzIS1a0h', SB_RPC='/rest/v1/rpc/tracker_sync_v2';
 var QR_SRC='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js', QR_SRI='sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1';
-var DEFAULTS={startCapital:154,startDate:'2026-10-19',endDate:'2026-12-31',dailyTarget:20,skipHolidays:true};
+var DEFAULTS={goal:1000000,startCapital:154,startDate:'2026-10-19',endDate:'2026-12-31',skipHolidays:true};
 var HOLIDAYS={
   '2026-01-01':"New Year's Day",'2026-01-19':'Martin Luther King Jr. Day','2026-02-16':"Presidents' Day",'2026-04-03':'Good Friday',
   '2026-05-25':'Memorial Day','2026-06-19':'Juneteenth','2026-07-03':'Independence Day (observed)','2026-09-07':'Labor Day',
@@ -410,26 +507,42 @@ var HOLIDAYS={
 };
 var EARLY={'2026-11-27':'Early close 1:00 PM ET','2026-12-24':'Early close 1:00 PM ET','2027-11-26':'Early close 1:00 PM ET'};
 var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var DAY=864e5;
+var DAY=864e5, ISO=/^\d{4}-\d{2}-\d{2}$/;
 
 /* ---------- storage ---------- */
 var store=null;
 try{ store=window.localStorage; store.setItem('__c20','1'); store.removeItem('__c20'); }catch(e){ store=null; }
 function sget(k){ try{ return store?store.getItem(k):null; }catch(e){ return null; } }
 function sset(k,v){ try{ if(store) store.setItem(k,v); return !!store; }catch(e){ return false; } }
+function loadJSON(k,def){ try{ var r=sget(k); return r?JSON.parse(r):def; }catch(e){ return def; } }
 
-var ISO=/^\d{4}-\d{2}-\d{2}$/;
-function cleanEntries(o){
-  var out={}; if(!o||typeof o!=='object') return out;
-  Object.keys(o).forEach(function(k){ var v=Number(o[k]); if(ISO.test(k)&&isFinite(v)&&v>=0) out[k]=Math.round(v*100)/100; });
+function txt4k(v){ return (typeof v==='string'&&v.trim())?v.slice(0,4000):''; }
+function cleanEntry(o){
+  if(!o||typeof o!=='object') return null;
+  var p=Number(o.p); if(!isFinite(p)||p<=-100||p>=100000) return null;
+  var e={p:Math.round(p*1e4)/1e4};
+  var w=o.w==null||o.w===''?null:Math.floor(Number(o.w)), l=o.l==null||o.l===''?null:Math.floor(Number(o.l));
+  if(w!=null&&isFinite(w)&&w>=0) e.w=w; if(l!=null&&isFinite(l)&&l>=0) e.l=l;
+  ['np','nl','nw'].forEach(function(k){ var t=txt4k(o[k]); if(t) e[k]=t; });
+  return e;
+}
+function cleanEntries(o){ var out={}; if(!o||typeof o!=='object') return out; Object.keys(o).forEach(function(k){ if(!ISO.test(k)) return; var e=cleanEntry(o[k]); if(e) out[k]=e; }); return out; }
+function legacyToPct(balances,start){ // v1 {date: balance} -> v2 {date:{p}}
+  var out={}, prev=start;
+  Object.keys(balances||{}).filter(function(d){return ISO.test(d);}).sort().forEach(function(d){
+    var b=Number(balances[d]); if(!(b>0)||!(prev>0)) return;
+    out[d]={p:Math.round((b/prev-1)*100*1e4)/1e4}; prev=b;
+  });
   return out;
 }
+function isLegacy(entries){ var ks=Object.keys(entries||{}); return ks.length>0&&ks.every(function(k){ return typeof entries[k]==='number'; }); }
 function cleanSettings(o){
   var s=Object.assign({},DEFAULTS);
   if(o&&typeof o==='object'){
+    if(isFinite(+o.goal)&&+o.goal>0&&+o.goal<1e13) s.goal=+o.goal;
     if(isFinite(+o.startCapital)&&+o.startCapital>0) s.startCapital=+o.startCapital;
-    if(isFinite(+o.dailyTarget)&&+o.dailyTarget>0&&+o.dailyTarget<=500) s.dailyTarget=+o.dailyTarget;
     if(ISO.test(o.startDate)) s.startDate=o.startDate;
     if(ISO.test(o.endDate)) s.endDate=o.endDate;
     if(typeof o.skipHolidays==='boolean') s.skipHolidays=o.skipHolidays;
@@ -437,17 +550,27 @@ function cleanSettings(o){
   }
   return s;
 }
+function cleanReviews(a){
+  if(!Array.isArray(a)) return [];
+  return a.filter(function(r){ return r&&/^\d{4}-\d{2}$/.test(r.month)&&typeof r.summary==='string'; })
+          .map(function(r){ return {month:r.month,summary:r.summary.slice(0,20000),at:typeof r.at==='string'?r.at:null}; });
+}
 function load(){
-  try{ var raw=sget(KEY); if(raw){ var o=JSON.parse(raw); return {settings:cleanSettings(o.settings),entries:cleanEntries(o.entries)}; } }catch(e){}
-  return {settings:Object.assign({},DEFAULTS),entries:{}};
+  try{
+    var o=JSON.parse(sget(KEY)||'null');
+    if(o) return {settings:cleanSettings(o.settings),entries:cleanEntries(o.entries),reviews:cleanReviews(o.reviews)};
+    var v1=JSON.parse(sget(KEY_V1)||'null'); // migrate the old balance-based data on this device
+    if(v1){ var st=cleanSettings(v1.settings); return {settings:st,entries:legacyToPct(v1.entries,st.startCapital),reviews:[]}; }
+  }catch(e){}
+  return {settings:Object.assign({},DEFAULTS),entries:{},reviews:[]};
 }
 var S=load();
-function loadJSON(k,def){ try{ var r=sget(k); return r?JSON.parse(r):def; }catch(e){ return def; } }
 var SY=loadJSON(SYNC_KEY,{}); if(!SY||typeof SY!=='object') SY={};
 var PD=loadJSON(PEND_KEY,{}); if(!PD||typeof PD!=='object') PD={}; if(!PD.ops||typeof PD.ops!=='object') PD.ops={}; PD.setVer=PD.setVer|0; PD.setSent=PD.setSent|0;
 function saveSY(){ sset(SYNC_KEY,JSON.stringify(SY)); }
 function savePD(){ sset(PEND_KEY,JSON.stringify(PD)); }
-function persist(){ if(!sset(KEY,JSON.stringify({app:'compound-tracker',version:1,settings:S.settings,entries:S.entries,savedAt:new Date().toISOString()}))&&store) toast('Could not save to browser storage'); }
+function persist(){ if(!sset(KEY,JSON.stringify({app:'compound-tracker',version:2,settings:S.settings,entries:S.entries,reviews:S.reviews,savedAt:new Date().toISOString()}))&&store) toast('Could not save to browser storage'); }
+persist();
 
 /* ---------- date + format helpers ---------- */
 function parseD(s){ var p=s.split('-'); return Date.UTC(+p[0],+p[1]-1,+p[2]); }
@@ -455,38 +578,32 @@ function iso(t){ return new Date(t).toISOString().slice(0,10); }
 function addDays(s,n){ return iso(parseD(s)+n*DAY); }
 function dow(s){ return new Date(parseD(s)).getUTCDay(); }
 function dLabel(s,withDow){ var t=new Date(parseD(s)); return (withDow===false?'':DOW[t.getUTCDay()]+', ')+MON[t.getUTCMonth()]+' '+t.getUTCDate(); }
-function rangeLabel(a,b){ var ta=new Date(parseD(a)), tb=new Date(parseD(b)); return MON[ta.getUTCMonth()]+' '+ta.getUTCDate()+(a===b?'':'–'+(ta.getUTCMonth()===tb.getUTCMonth()?'':MON[tb.getUTCMonth()]+' ')+tb.getUTCDate()); }
 function dShort(s){ var t=new Date(parseD(s)); return MON[t.getUTCMonth()]+' '+t.getUTCDate(); }
+function rangeLabel(a,b){ var ta=new Date(parseD(a)), tb=new Date(parseD(b)); return MON[ta.getUTCMonth()]+' '+ta.getUTCDate()+(a===b?'':'–'+(ta.getUTCMonth()===tb.getUTCMonth()?'':MON[tb.getUTCMonth()]+' ')+tb.getUTCDate()); }
 var nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 var nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
 function usd(v){ if(v==null||!isFinite(v)) return '—'; return (v<0?'−':'')+'$'+nf2.format(Math.abs(v)); }
 function usdC(v){
   if(v==null||!isFinite(v)) return '—';
   var a=Math.abs(v), s=v<0?'−':'';
-  if(a>=1e9) return s+'$'+(a/1e9).toFixed(2)+'B';
-  if(a>=1e6) return s+'$'+(a/1e6).toFixed(2)+'M';
+  if(a>=1e9) return s+'$'+(a/1e9).toFixed(2).replace(/\.00$/,'')+'B';
+  if(a>=1e6) return s+'$'+(a/1e6).toFixed(2).replace(/\.00$/,'')+'M';
   if(a>=1e5) return s+'$'+(a/1e3).toFixed(1)+'K';
   return usd(v);
 }
-function usdAxis(v){
-  var a=Math.abs(v);
-  if(a>=1e9) return '$'+trim(a/1e9)+'B';
-  if(a>=1e6) return '$'+trim(a/1e6)+'M';
-  if(a>=1e3) return '$'+trim(a/1e3)+'K';
-  return '$'+trim(a);
-}
+function usdAxis(v){ var a=Math.abs(v); if(a>=1e9) return '$'+trim(a/1e9)+'B'; if(a>=1e6) return '$'+trim(a/1e6)+'M'; if(a>=1e3) return '$'+trim(a/1e3)+'K'; return '$'+trim(a); }
 function trim(x){ return (Math.round(x*10)/10).toString(); }
-function pct(v,d){
-  if(v==null||!isFinite(v)) return '—';
-  d=(d==null)?1:d;
-  var a=Math.abs(v*100), s=v>0?'+':(v<0?'−':'');
-  return s+(a>=1000?nf0.format(a):a.toFixed(d))+'%';
-}
-function signUsd(v){ if(v==null||!isFinite(v)) return '—'; return (v>=0?'+':'−')+usd(Math.abs(v)).replace('−',''); }
+function pct(v,d){ if(v==null||!isFinite(v)) return '—'; d=(d==null)?1:d; var a=Math.abs(v*100), s=v>0?'+':(v<0?'−':''); return s+(a>=1000?nf0.format(a):a.toFixed(d))+'%'; }
+function pctU(v,d){ return pct(v,d).replace('+',''); }
+function ppt(v){ if(v==null||!isFinite(v)) return '—'; return (v>0?'+':(v<0?'−':''))+Math.abs(v*100).toFixed(2)+' pp'; }
+function signUsd(v){ if(v==null||!isFinite(v)) return '—'; return (v>=0?'+':'−')+usd(Math.abs(v)); }
 function cls(v){ return v>0?'good':(v<0?'bad':''); }
 function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
 function plural(n,w){ return n+' '+(n===1?w:(w.slice(-1)==='y'?w.slice(0,-1)+'ies':w+'s')); }
+function mean(a){ return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null; }
+function geoMean(ps){ if(!ps.length) return null; var m=ps.reduce(function(a,p){return a*(1+p);},1); return m>0?Math.pow(m,1/ps.length)-1:-1; }
+function wr(w,l){ return (w+l)>0?w/(w+l):null; }
 
 /* ---------- New York clock ---------- */
 function nyNow(){
@@ -509,70 +626,93 @@ function marketStatus(ny){
 
 /* ---------- model ---------- */
 function model(){
-  var s=S.settings, r=s.dailyTarget/100, days=[], idx=0, bal=s.startCapital, d, guard=0;
-  for(d=s.startDate; d<=s.endDate && guard<900; d=addDays(d,1), guard++){
+  var s=S.settings, G=s.goal, start=s.startCapital, days=[], idx=0, d, guard=0;
+  for(d=s.startDate; d<=s.endDate&&guard<900; d=addDays(d,1), guard++){
     var w=dow(d); if(w===0||w===6) continue;
     var hol=HOLIDAYS[d]||null;
     if(hol&&s.skipHolidays){ days.push({date:d,closed:true,holiday:hol}); continue; }
-    idx++; var ps=bal, pp=ps*r, pe=ps+pp; bal=pe;
-    days.push({date:d,idx:idx,planStart:ps,planProfit:pp,planEnd:pe,planCum:pe/s.startCapital-1,early:EARLY[d]||null,holNote:hol});
+    idx++; days.push({date:d,idx:idx,early:EARLY[d]||null,holNote:hol});
   }
-  var sessions=days.filter(function(x){return !x.closed;}), N=sessions.length, final=bal;
-  var ny=nyNow();
-  // elapsed = sessions whose close has passed; started = sessions that have opened
-  var elapsed=0, started=0;
+  var sessions=days.filter(function(x){return !x.closed;}), N=sessions.length;
+  var r0=(N>0&&start>0)?Math.pow(G/start,1/N)-1:0;
+  var ny=nyNow(), elapsed=0, started=0;
   sessions.forEach(function(x){
     var close=x.early?780:960;
     if(x.date<ny.date||(x.date===ny.date&&ny.mins>=close)) elapsed=x.idx;
     if(x.date<ny.date||(x.date===ny.date&&ny.mins>=570)) started=x.idx;
   });
-  var prevBal=s.startCapital, prevIdx=0, peak=s.startCapital, maxDD=0, hits=0, logged=0, run=0, best=0, last=null;
-  var rets=[], bestDay=null, worstDay=null;
+  var lastIdx=0; sessions.forEach(function(x){ if(S.entries[x.date]) lastIdx=x.idx; });
+  var bal=start, peak=start, maxDD=0, last=null, logged=[], assumed=[];
   sessions.forEach(function(x){
-    x.past=x.idx<=elapsed; x.isToday=x.date===ny.date;
-    var b=S.entries[x.date];
-    if(b==null) return;
-    var k=x.idx-prevIdx;
-    x.actual=b; x.prev=prevBal; x.k=k;
-    x.ret=prevBal>0?b/prevBal-1:null;
-    x.perRet=prevBal>0&&b>0?Math.pow(b/prevBal,1/k)-1:(prevBal>0?-1:null);
-    x.dayTarget=prevBal*Math.pow(1+r,k);
-    x.hit=b>=x.dayTarget-1e-9;
-    x.gap=x.dayTarget-b;
-    x.vsPlan=b/x.planEnd-1; x.vsPlanUsd=b-x.planEnd;
-    peak=Math.max(peak,b); var dd=peak>0?b/peak-1:0; if(dd<maxDD) maxDD=dd;
-    logged++; if(x.hit){hits++; run++; if(run>best) best=run;} else run=0;
-    if(x.perRet!=null){ rets.push(x.perRet);
-      if(!bestDay||x.perRet>bestDay.perRet) bestDay=x;
-      if(!worstDay||x.perRet<worstDay.perRet) worstDay=x; }
-    prevBal=b; prevIdx=x.idx; last=x;
+    x.past=x.idx<=elapsed; x.isToday=x.date===ny.date; x.ideal=start*Math.pow(1+r0,x.idx);
+    var e=S.entries[x.date];
+    if(x.idx>lastIdx) return;
+    x.hist=true; x.startBal=bal; x.rem=N-x.idx+1;
+    x.req=bal>0?Math.pow(G/bal,1/x.rem)-1:null; x.targetBal=x.req!=null?bal*(1+x.req):null;
+    if(e){
+      x.logged=true; x.p=e.p/100; x.endBal=bal*(1+x.p); x.hit=x.req!=null&&x.p>=x.req-1e-9;
+      x.w=e.w==null?null:e.w; x.l=e.l==null?null:e.l; x.np=e.np||''; x.nl=e.nl||''; x.nw=e.nw||''; x.hasNotes=!!(x.np||x.nl||x.nw);
+      logged.push(x); last=x;
+    } else { x.assumed=true; x.p=0; x.endBal=bal; assumed.push(x); }
+    bal=x.endBal; x.vsIdeal=x.endBal/x.ideal-1;
+    if(bal>peak) peak=bal; var dd=peak>0?bal/peak-1:0; if(dd<maxDD) maxDD=dd; x.dd=dd;
   });
-  var current=last?last.actual:s.startCapital, curIdx=last?last.idx:0, remaining=N-curIdx;
-  var required=(remaining>0&&current>0)?Math.pow(final/current,1/remaining)-1:null;
-  var equiv=current>0?Math.log(current/s.startCapital)/Math.log(1+r):-Infinity;
-  var geo=(curIdx>0&&current>0)?Math.pow(current/s.startCapital,1/curIdx)-1:null;
-  var arith=rets.length?rets.reduce(function(a,b){return a+b;},0)/rets.length:null;
-  var missing=sessions.filter(function(x){return x.idx<=elapsed&&x.actual==null;}).length;
-  return {s:s,r:r,days:days,sessions:sessions,N:N,final:final,ny:ny,elapsed:elapsed,started:started,
-    last:last,current:current,curIdx:curIdx,remaining:remaining,required:required,equiv:equiv,ahead:equiv-curIdx,
-    geo:geo,arith:arith,hits:hits,logged:logged,streak:run,bestStreak:best,maxDD:maxDD,peak:peak,
-    bestDay:bestDay,worstDay:worstDay,missing:missing,
-    projPace:geo!=null?current*Math.pow(1+geo,remaining):null,
-    projTarget:current*Math.pow(1+r,remaining),
-    next:sessions[curIdx]||null};
+  var current=bal, remaining=N-lastIdx, reached=current>=G;
+  var required=(remaining>0&&current>0)?Math.max(Math.pow(G/current,1/remaining)-1,0):null;
+  sessions.forEach(function(x){
+    if(x.idx<=lastIdx) return;
+    var k=x.idx-lastIdx; x.future=true; x.req=required;
+    x.startBal=required!=null?current*Math.pow(1+required,k-1):current; x.targetBal=required!=null?x.startBal*(1+required):null;
+  });
+  var idealNow=start*Math.pow(1+r0,lastIdx);
+  var equiv=current>0?Math.log(current/start)/Math.log(1+r0):-Infinity;
+  // stats
+  var hits=0, run=0, best=0, W=0, L=0, cntDays=0, greens=[], reds=[], flats=0, redRun=0, maxRed=0, greenRun=0;
+  logged.forEach(function(x){
+    if(x.hit){ hits++; run++; if(run>best) best=run; } else run=0;
+    if(x.w!=null||x.l!=null){ W+=x.w||0; L+=x.l||0; cntDays++; }
+    if(x.p>0){ greens.push(x.p); greenRun++; redRun=0; } else if(x.p<0){ reds.push(x.p); redRun++; greenRun=0; if(redRun>maxRed) maxRed=redRun; } else { flats++; redRun=0; greenRun=0; }
+  });
+  var bestDay=null, worstDay=null;
+  logged.forEach(function(x){ if(!bestDay||x.p>bestDay.p) bestDay=x; if(!worstDay||x.p<worstDay.p) worstDay=x; });
+  var hiWR=logged.filter(function(x){ var r=wr(x.w||0,x.l||0); return r!=null&&r>=0.5; }), loWR=logged.filter(function(x){ var r=wr(x.w||0,x.l||0); return r!=null&&r<0.5; });
+  var geo=lastIdx>0&&current>0?Math.pow(current/start,1/lastIdx)-1:null;
+  var recent=logged.slice(-5).map(function(x){return x.p;}), rec5=geoMean(recent);
+  var costFlat=(remaining>1&&required!=null&&!reached)?Math.pow(G/current,1/(remaining-1))-1-required:null;
+  var missingPast=sessions.filter(function(x){return x.idx<=elapsed&&!x.logged;});
+  return {s:s,G:G,start:start,days:days,sessions:sessions,N:N,r0:r0,ny:ny,elapsed:elapsed,started:started,
+    lastIdx:lastIdx,last:last,current:current,remaining:remaining,required:required,reached:reached,idealNow:idealNow,
+    equiv:equiv,ahead:equiv-lastIdx,logged:logged,assumed:assumed,missingPast:missingPast,
+    hits:hits,streak:run,bestStreak:best,W:W,L:L,cntDays:cntDays,greens:greens,reds:reds,flats:flats,maxRed:maxRed,greenRun:greenRun,
+    bestDay:bestDay,worstDay:worstDay,maxDD:maxDD,peak:peak,geo:geo,rec5:rec5,recentN:recent.length,costFlat:costFlat,
+    hiWR:hiWR,loWR:loWR,next:sessions[lastIdx]||null,
+    projPace:geo!=null?current*Math.pow(1+geo,remaining):null};
 }
-function prevLoggedBefore(M,idx){
-  var b=M.s.startCapital, i=0;
-  M.sessions.forEach(function(x){ if(x.idx<idx&&x.actual!=null){ b=x.actual; i=x.idx; } });
-  return {bal:b,idx:i};
+function etaFor(Mo,rate){ // first session date the balance reaches the goal at a constant rate
+  if(Mo.reached) return {date:Mo.last?Mo.last.date:Mo.s.startDate,within:true,n:0};
+  if(rate==null||!(rate>0)) return null;
+  var n=Math.ceil(Math.log(Mo.G/Mo.current)/Math.log(1+rate)-1e-9);
+  if(!isFinite(n)||n>5000) return null;
+  if(Mo.lastIdx+n<=Mo.N) return {date:Mo.sessions[Mo.lastIdx+n-1].date,within:true,n:n};
+  var extra=Mo.lastIdx+n-Mo.N, d=Mo.s.endDate, g=0;
+  while(extra>0&&g<8000){ d=addDays(d,1); g++; if(isMarketDay(d)) extra--; }
+  return {date:d,within:false,n:n};
+}
+function trackStatus(Mo){
+  if(Mo.reached) return {cls:'ok',label:'Goal reached'};
+  if(Mo.required==null) return {cls:'mid',label:'—'};
+  var gap=Mo.required-Mo.r0;
+  if(gap<=1e-9) return {cls:'ok',label:'On track'};
+  if(gap<=0.02) return {cls:'mid',label:'Slightly behind'};
+  return {cls:'bad',label:'Behind'};
 }
 
 /* ---------- UI refs ---------- */
 var $=function(id){return document.getElementById(id);};
-var tip=$('tip'), M=null, selDate=null, scaleMode=(sget(SCALE_KEY)==='linear')?'linear':'log', rangeMode=(sget(RANGE_KEY)==='all')?'all':'near';
-function viewN(){ return rangeMode==='all'?M.N:clamp(Math.max(M.curIdx,M.started)+5,Math.min(10,M.N),M.N); }
-
-function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('on');},2600); }
+var tip=$('tip'), M=null, selDate=null, jMonth=null;
+var scaleMode=(sget(SCALE_KEY)==='linear')?'linear':'log', rangeMode=(sget(RANGE_KEY)==='all')?'all':'near';
+function viewN(){ return rangeMode==='all'?M.N:clamp(Math.max(M.lastIdx,M.started)+5,Math.min(10,M.N),M.N); }
+function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('on');},2800); }
 
 /* ---------- theme ---------- */
 var themeMem=null;
@@ -583,26 +723,23 @@ function applyTheme(){
 }
 $('themeBtn').addEventListener('click',function(){
   var t=themeMem||sget(THEME_KEY)||'auto', n=t==='auto'?'light':(t==='light'?'dark':'auto');
-  themeMem=n; sset(THEME_KEY,n);
-  applyTheme(); drawCharts();
+  themeMem=n; sset(THEME_KEY,n); applyTheme(); drawCharts();
 });
 
-/* ---------- render: header ---------- */
+/* ---------- header ---------- */
 function renderHeader(){
   var s=M.s;
-  $('hdrSub').textContent=usd(s.startCapital)+' → '+usdC(M.final)+' by '+dLabel(s.endDate,false)+', '+s.endDate.slice(0,4)+
-    ' · '+s.dailyTarget+'% per session · '+M.N+' sessions'+(s.skipHolidays?' (holidays skipped)':'');
+  $('hdrSub').textContent=usd(s.startCapital)+' → '+usdC(M.G)+' by '+dLabel(s.endDate,false)+', '+s.endDate.slice(0,4)+
+    ' · '+M.N+' sessions'+(s.skipHolidays?' (holidays skipped)':'')+' · daily target recalculated from your balance';
   var ms=marketStatus(M.ny), chip=$('mktChip');
   chip.querySelector('.dot').className='dot '+ms.cls; chip.lastChild.textContent=ms.txt;
-  $('balTitle').textContent='Balance vs. '+s.dailyTarget+'% plan';
-  $('retTitle').textContent='Daily return vs. '+s.dailyTarget+'% target';
 }
 
-/* ---------- render: log form ---------- */
+/* ---------- log form ---------- */
 function defaultSession(){
-  var avail=M.sessions.filter(function(x){return x.idx<=Math.max(M.started,0);});
-  if(!avail.length) return M.sessions[0]?M.sessions[0].date:null;
-  return avail[avail.length-1].date;
+  if(!M.sessions.length) return null;
+  if(M.lastIdx<M.N&&M.lastIdx<Math.max(M.started,1)) return M.sessions[M.lastIdx].date;
+  var i=clamp(Math.max(M.started,1),1,M.N); return M.sessions[i-1].date;
 }
 function renderForm(keepSel){
   var sel=$('sessSel'), cur=keepSel&&selDate?selDate:defaultSession();
@@ -610,124 +747,178 @@ function renderForm(keepSel){
   sel.innerHTML='';
   M.sessions.forEach(function(x){
     var o=document.createElement('option'); o.value=x.date;
-    o.textContent='Day '+x.idx+' · '+dLabel(x.date)+(x.actual!=null?'  ✓ '+usd(x.actual):'')+(x.isToday?'  (today)':'');
+    o.textContent='Day '+x.idx+' · '+dLabel(x.date)+(x.logged?'  ✓ '+pct(x.p,2):'')+(x.isToday?'  (today)':'');
     sel.appendChild(o);
   });
   selDate=cur; if(cur) sel.value=cur;
   syncFormToSel();
 }
 function syncFormToSel(){
-  var x=M.sessions.find(function(y){return y.date===selDate;});
-  var has=x&&x.actual!=null;
-  $('balIn').value=has?x.actual.toFixed(2):'';
-  $('saveBtn').textContent=has?'Update':'Save';
-  $('delBtn').hidden=!has;
+  var x=M.sessions.find(function(y){return y.date===selDate;}), e=x?S.entries[x.date]:null;
+  $('pctIn').value=e?String(e.p):'';
+  $('winIn').value=e&&e.w!=null?e.w:''; $('lossIn').value=e&&e.l!=null?e.l:'';
+  $('nP').value=e&&e.np||''; $('nL').value=e&&e.nl||''; $('nW').value=e&&e.nw||'';
+  $('notesBox').open=!!(e&&(e.np||e.nl||e.nw));
+  $('saveBtn').textContent=e?'Update':'Save'; $('delBtn').hidden=!e;
   $('formNote').textContent=x&&x.early?x.early:'';
   updatePreview();
+}
+function readPct(){ var raw=String($('pctIn').value||'').trim().replace(',','.').replace('%','').replace('−','-').replace(/^\+/,''); if(raw===''||raw==='-') return NaN; return Number(raw); }
+function chainBefore(idx){ // balance before session idx, using entries as they are now
+  var b=M.start; M.sessions.forEach(function(x){ if(x.idx<idx&&S.entries[x.date]) b=b*(1+S.entries[x.date].p/100); }); return b;
 }
 function updatePreview(){
   var p=$('preview'), x=M.sessions.find(function(y){return y.date===selDate;});
   if(!x){ p.textContent='No sessions in the plan range. Check Settings.'; return; }
-  var prev=prevLoggedBefore(M,x.idx), k=x.idx-prev.idx, tgt=prev.bal*Math.pow(1+M.r,k);
-  var raw=$('balIn').value, v=raw===''?NaN:Number(raw);
-  var base='From <b>'+usd(prev.bal)+'</b>'+(prev.idx?' (Day '+prev.idx+')':' (start)')+', the target for Day '+x.idx+' is <b>'+usd(tgt)+'</b>'+
-    (k>1?' — '+k+' sessions × '+M.s.dailyTarget+'%':' (+'+usd(tgt-prev.bal)+')')+'. Plan balance: '+usd(x.planEnd)+'.';
-  if(!isFinite(v)||v<=0){ p.innerHTML=base; return; }
-  var ret=v/prev.bal-1, hit=v>=tgt-1e-9;
-  p.innerHTML=(hit?'<b class="good">✓ Target hit</b>':'<b class="bad">✗ Short by '+usd(tgt-v)+'</b> (needs '+pct(tgt/v-1)+' more)')+
-    ' · return <b>'+pct(ret,2)+'</b>'+(k>1?' over '+k+' sessions':'')+' vs '+pct(Math.pow(1+M.r,k)-1)+' target · vs plan <b class="'+cls(v-x.planEnd)+'">'+pct(v/x.planEnd-1)+'</b>';
+  var sb=chainBefore(x.idx), rem=M.N-x.idx+1, req=Math.max(Math.pow(M.G/sb,1/rem)-1,0), tb=sb*(1+req);
+  var base='Day '+x.idx+' starts at <b>'+usd(sb)+'</b>. Target: <b>'+pct(req,2)+'</b> → <b>'+usd(tb)+'</b> (+'+usd(tb-sb)+'), the rate that reaches '+usdC(M.G)+' in the '+plural(rem,'session')+' left.';
+  var v=readPct();
+  if(!isFinite(v)){ p.innerHTML=base; return; }
+  if(v<=-100){ p.innerHTML='<b class="bad">A loss must be above −100%.</b>'; return; }
+  var nb=sb*(1+v/100), hit=v/100>=req-1e-9, nextReq=rem>1?Math.max(Math.pow(M.G/nb,1/(rem-1))-1,0):null;
+  var w=Number($('winIn').value), l=Number($('lossIn').value), r=wr(isFinite(w)?w:0,isFinite(l)?l:0);
+  p.innerHTML=(hit?'<b class="good">✓ Target hit</b>':'<b class="bad">✗ Short by '+(req*100-v).toFixed(2)+' pp</b> ('+usd(tb-nb)+')')+
+    ' · balance <b>'+usd(nb)+'</b> ('+signUsd(nb-sb)+')'+(r!=null?' · win rate '+Math.round(r*100)+'%':'')+
+    (nextReq!=null?'<br><span class="muted">Then the target becomes '+pct(nextReq,2)+' per day for the remaining '+plural(rem-1,'session')+'.</span>':'');
 }
 $('sessSel').addEventListener('change',function(){ selDate=this.value; syncFormToSel(); });
-$('balIn').addEventListener('input',updatePreview);
+['pctIn','winIn','lossIn'].forEach(function(id){ $(id).addEventListener('input',updatePreview); });
+$('signBtn').addEventListener('click',function(){ var v=String($('pctIn').value||'').trim(); $('pctIn').value=v.charAt(0)==='-'?v.slice(1):'-'+v; updatePreview(); $('pctIn').focus(); });
 $('logForm').addEventListener('submit',function(e){
-  e.preventDefault();
-  var v=Number($('balIn').value);
-  if(!selDate){ return; }
-  if($('balIn').value===''||!isFinite(v)||v<0){ toast('Enter a valid balance'); $('balIn').focus(); return; }
-  setEntry(selDate,v);
+  e.preventDefault(); if(!selDate) return;
+  var v=readPct();
+  if(!isFinite(v)||v<=-100||v>=100000){ toast('Enter your % gain for the day (use ± for a loss)'); $('pctIn').focus(); return; }
+  var w=$('winIn').value===''?null:Math.floor(Number($('winIn').value)), l=$('lossIn').value===''?null:Math.floor(Number($('lossIn').value));
+  if((w!=null&&!(w>=0))||(l!=null&&!(l>=0))){ toast('Trades must be 0 or more'); return; }
+  var en={p:Math.round(v*1e4)/1e4}; if(w!=null) en.w=w; if(l!=null) en.l=l;
+  var np=txt4k($('nP').value), nl=txt4k($('nL').value), nw=txt4k($('nW').value);
+  if(np) en.np=np; if(nl) en.nl=nl; if(nw) en.nw=nw;
+  setEntry(selDate,en);
   var d=selDate; refresh(true);
   var x=M.sessions.find(function(y){return y.date===d;});
-  toast('Saved Day '+x.idx+' · '+usd(x.actual)+' — '+(x.hit?'✓ target hit ('+pct(x.ret)+')':'✗ missed by '+usd(x.gap)));
+  toast('Saved Day '+x.idx+' · '+pct(x.p,2)+' → '+usd(x.endBal)+' — '+(x.hit?'✓ target hit':'✗ missed by '+((x.req-x.p)*100).toFixed(2)+' pp'));
 });
 $('delBtn').addEventListener('click',function(){
-  if(!selDate||S.entries[selDate]==null) return;
+  if(!selDate||!S.entries[selDate]) return;
+  if(!window.confirm('Delete the entry for '+dLabel(selDate)+'? Balances after it will be recalculated.')) return;
   delEntry(selDate); refresh(true); toast('Entry deleted');
 });
 function selectSession(date){
   if(!M.sessions.some(function(x){return x.date===date;})) return;
   selDate=date; $('sessSel').value=date; syncFormToSel();
   $('logCard').scrollIntoView({behavior:'smooth',block:'start'});
-  setTimeout(function(){ try{$('balIn').focus({preventScroll:true});}catch(e){} },350);
+  setTimeout(function(){ try{$('pctIn').focus({preventScroll:true});}catch(e){} },350);
 }
 
-/* ---------- render: verdict ---------- */
+/* ---------- verdict ---------- */
 function renderVerdict(){
-  var el=$('verdictCard'), L=M.last, s=M.s, h='';
+  var el=$('verdictCard'), L=M.last, h='', n=M.next;
+  var gapWarn=M.assumed.length?'<div class="warnline">'+plural(M.assumed.length,'earlier session')+' without an entry '+(M.assumed.length===1?'is':'are')+' counted as 0%: '+M.assumed.slice(0,4).map(function(x){return dShort(x.date);}).join(', ')+(M.assumed.length>4?'…':'')+'. Log '+(M.assumed.length===1?'it':'them')+' if you traded.</div>':'';
   if(!L){
-    var f=M.sessions[0];
-    h='<div class="verdict"><div class="v-top"><div class="badge none">→</div><div><div class="v-title">No balance logged yet</div><div class="small muted">Starting capital '+usd(s.startCapital)+'</div></div></div>'+
-      (f?'<div class="v-grid"><div class="v-cell"><div class="k">First session</div><div class="v">'+dLabel(f.date)+'</div></div><div class="v-cell"><div class="k">Target balance</div><div class="v num">'+usd(f.planEnd)+'</div><div class="s">+'+usd(f.planProfit)+' profit</div></div><div class="v-cell"><div class="k">Goal</div><div class="v num">'+usdC(M.final)+'</div><div class="s">'+dLabel(s.endDate,false)+'</div></div></div>':'')+
-      '<div class="next">Log your balance after each session — the dashboard compares it with the '+s.dailyTarget+'% target from your previous balance and with the plan.</div></div>';
+    h='<div class="verdict"><div class="v-top"><div class="badge none">→</div><div><div class="v-title">No session logged yet</div><div class="small muted">Starting capital '+usd(M.start)+'</div></div></div>'+
+      '<div class="v-grid"><div class="v-cell"><div class="k">First target</div><div class="v num">'+pct(M.required,2)+'</div><div class="s">'+(n?dLabel(n.date):'')+'</div></div>'+
+      '<div class="v-cell"><div class="k">Target balance</div><div class="v num">'+usd(n?n.targetBal:null)+'</div></div>'+
+      '<div class="v-cell"><div class="k">Goal</div><div class="v num">'+usdC(M.G)+'</div><div class="s">'+dLabel(M.s.endDate,false)+'</div></div></div>'+
+      '<div class="next">After each session, enter your % gain. The balance, next target and stats update automatically.</div></div>';
     el.innerHTML=h; return;
   }
-  var short=L.gap>0;
   h='<div class="verdict"><div class="v-top"><div class="badge '+(L.hit?'hit':'miss')+'">'+(L.hit?'✓':'✗')+'</div><div><div class="v-title">'+(L.hit?'Target hit':'Target missed')+'</div>'+
-    '<div class="small muted">Latest logged · Day '+L.idx+' · '+dLabel(L.date)+(L.k>1?' · covers '+L.k+' sessions':'')+'</div></div></div>'+
+    '<div class="small muted">Latest logged · Day '+L.idx+' · '+dLabel(L.date)+'</div></div></div>'+
     '<div class="v-grid">'+
-      '<div class="v-cell"><div class="k">Return</div><div class="v num '+cls(L.ret)+'">'+pct(L.ret,2)+'</div><div class="s">target '+pct(Math.pow(1+M.r,L.k)-1)+'</div></div>'+
-      '<div class="v-cell"><div class="k">Balance</div><div class="v num">'+usd(L.actual)+'</div><div class="s">target '+usd(L.dayTarget)+'</div></div>'+
-      '<div class="v-cell"><div class="k">'+(short?'Left to target':'Above target')+'</div><div class="v num '+(short?'bad':'good')+'">'+usd(Math.abs(L.gap))+'</div><div class="s">'+(short?'needs '+pct(L.dayTarget/L.actual-1)+' more':pct(L.actual/L.dayTarget-1)+' over')+'</div></div>'+
-      '<div class="v-cell"><div class="k">Profit this session</div><div class="v num '+cls(L.actual-L.prev)+'">'+signUsd(L.actual-L.prev)+'</div><div class="s">target +'+usd(L.dayTarget-L.prev)+'</div></div>'+
+      '<div class="v-cell"><div class="k">Your gain</div><div class="v num '+cls(L.p)+'">'+pct(L.p,2)+'</div><div class="s">target '+pct(L.req,2)+'</div></div>'+
+      '<div class="v-cell"><div class="k">'+(L.hit?'Above target':'Short of target')+'</div><div class="v num '+(L.hit?'good':'bad')+'">'+Math.abs((L.p-L.req)*100).toFixed(2)+' pp</div><div class="s">'+usd(Math.abs(L.endBal-L.targetBal))+'</div></div>'+
+      '<div class="v-cell"><div class="k">Balance</div><div class="v num">'+usd(L.endBal)+'</div><div class="s">'+signUsd(L.endBal-L.startBal)+' this session</div></div>'+
+      '<div class="v-cell"><div class="k">Trades</div><div class="v num">'+(L.w!=null||L.l!=null?(L.w||0)+'W / '+(L.l||0)+'L':'—')+'</div><div class="s">'+(wr(L.w||0,L.l||0)!=null?'win rate '+Math.round(wr(L.w||0,L.l||0)*100)+'%':'not entered')+'</div></div>'+
     '</div>';
-  var n=M.next;
-  if(n){
-    var nt=M.current*(1+M.r);
-    h+='<div class="next">Next: <b>Day '+n.idx+' · '+dLabel(n.date)+'</b> — reach <b class="num">'+usd(nt)+'</b> (+'+usd(nt-M.current)+'). Plan balance that day: '+usd(n.planEnd)+(n.early?' · '+n.early:'')+'.</div>';
-  } else {
-    h+='<div class="next">That was the last session of the plan. Final goal was '+usd(M.final)+' — you finished at <b>'+usd(M.current)+'</b> ('+pct(M.current/M.final-1)+' vs goal).</div>';
-  }
-  el.innerHTML=h+'</div>';
+  if(M.reached) h+='<div class="next"><b>Goal reached.</b> Balance '+usd(M.current)+' — '+pct(M.current/M.G-1)+' above '+usdC(M.G)+'.</div>';
+  else if(n) h+='<div class="next">Next: <b>Day '+n.idx+' · '+dLabel(n.date)+'</b> — target <b class="num">'+pct(M.required,2)+'</b> → <b class="num">'+usd(n.targetBal)+'</b> (+'+usd(n.targetBal-M.current)+')'+(n.early?' · '+n.early:'')+'. '+
+    (M.required>L.req+1e-9?'Up '+ppt(M.required-L.req)+' from the last target.':'Down '+ppt(L.req-M.required).replace('+','')+' from the last target.')+'</div>';
+  else h+='<div class="next">That was the last session. You finished at <b>'+usd(M.current)+'</b> ('+pct(M.current/M.G-1)+' vs goal).</div>';
+  el.innerHTML=h+gapWarn+'</div>';
 }
 
-/* ---------- render: KPIs ---------- */
+/* ---------- KPIs ---------- */
 function tile(k,v,s,extra,heroCls){ return '<div class="tile"><div class="k">'+k+'</div><div class="v num '+(heroCls||'')+'">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+(extra||'')+'</div>'; }
 function renderKPIs(){
-  var s=M.s, L=M.last, h='';
-  var pnl=M.current-s.startCapital;
-  h+=tile('Current balance','<span>'+usdC(M.current)+'</span>','<span class="'+cls(pnl)+'">'+signUsd(pnl)+' ('+pct(pnl/s.startCapital)+')</span> since start','','hero');
-  if(L){
-    h+=tile('vs. plan (Day '+L.idx+')','<span class="'+cls(L.vsPlanUsd)+'">'+pct(L.vsPlan)+'</span>','<span class="'+cls(L.vsPlanUsd)+'">'+signUsd(L.vsPlanUsd)+'</span> · plan '+usdC(L.planEnd));
-    var a=M.ahead, aTxt=Math.abs(a)<0.05?'On schedule':(a>0?a.toFixed(1)+' sessions ahead':Math.abs(a).toFixed(1)+' sessions behind');
-    h+=tile('Schedule','<span class="'+(Math.abs(a)<0.05?'':cls(a))+'">'+aTxt+'</span>','Your balance = plan Day <b>'+(isFinite(M.equiv)?Math.max(M.equiv,0).toFixed(1):'0')+'</b>; logged through Day '+L.idx);
-  } else {
-    h+=tile('vs. plan','—','Log a balance to compare');
-    h+=tile('Schedule','—','Day 0 of '+M.N);
-  }
-  var path=clamp(isFinite(M.equiv)?M.equiv/M.N:0,0,1);
-  h+=tile('Goal · '+usdC(M.final),(path*100).toFixed(1)+'% done','<b>'+((1-path)*100).toFixed(1)+'% left</b> of the growth path · '+usdC(Math.max(M.final-M.current,0))+' to go',
-    '<div class="meter" title="Share of the '+M.N+'-session compounding path completed"><i style="width:'+(path*100).toFixed(2)+'%"></i></div>');
-  if(M.remaining>0){
-    var rq=M.required, over=rq>M.r+1e-9;
-    h+=tile('Needed per session to reach goal','<span class="'+(over?'bad':'good')+'">'+pct(rq,2)+'</span>','over the remaining <b>'+M.remaining+'</b> sessions (plan: '+s.dailyTarget+'%)');
-  } else h+=tile('Needed per session','—','Plan complete');
-  h+=tile('Hit rate',M.logged?Math.round(M.hits/M.logged*100)+'%':'—',M.logged?('<b>'+M.hits+'/'+M.logged+'</b> sessions · streak '+M.streak+' · best '+M.bestStreak):'No sessions logged');
-  h+=tile('Avg. return / session',M.geo!=null?'<span class="'+cls(M.geo)+'">'+pct(M.geo,2)+'</span>':'—',M.geo!=null?'compounded · simple avg '+pct(M.arith,2):'Target '+s.dailyTarget+'%');
-  h+=tile('Projected '+dShort(s.endDate),M.projPace!=null?usdC(M.projPace):usdC(M.projTarget),M.projPace!=null?'at your average pace · at '+s.dailyTarget+'% from here: '+usdC(M.projTarget):'at '+s.dailyTarget+'% from your balance');
+  var s=M.s, L=M.last, h='', pnl=M.current-M.start, ts=trackStatus(M);
+  h+=tile('Current balance',usdC(M.current),'<span class="'+cls(pnl)+'">'+signUsd(pnl)+' ('+pct(pnl/M.start)+')</span> · after Day '+M.lastIdx+' of '+M.N,'','hero');
+  h+=tile('Target for next session',M.reached?'Done':pct(M.required,2),M.next&&!M.reached?'→ '+usd(M.next.targetBal)+' on '+dShort(M.next.date)+' (+'+usd(M.next.targetBal-M.current)+')':'');
+  var aTxt=Math.abs(M.ahead)<0.05?'exactly on the ideal path':(M.ahead>0?M.ahead.toFixed(1)+' sessions ahead':Math.abs(M.ahead).toFixed(1)+' sessions behind');
+  h+=tile('On track?','<span class="status-pill '+ts.cls+'">'+ts.label+'</span>','Ideal path now '+usdC(M.idealNow)+' · you are <b class="'+cls(M.current-M.idealNow)+'">'+pct(M.current/M.idealNow-1)+'</b> · '+aTxt);
+  var path=clamp(isFinite(M.equiv)?Math.log(M.current/M.start)/Math.log(M.G/M.start):0,0,1);
+  h+=tile('Progress to '+usdC(M.G),(path*100).toFixed(1)+'% of the way','<b>'+((1-path)*100).toFixed(1)+'% left</b> · '+usdC(Math.max(M.G-M.current,0))+' to go (×'+(M.G/M.current<100?(M.G/M.current).toFixed(1):nf0.format(M.G/M.current))+')',
+    '<div class="meter" title="Share of the compounding path from start to goal"><i style="width:'+(path*100).toFixed(2)+'%"></i></div>');
+  h+=tile('Needed per day now',M.required!=null?'<span class="'+(M.required>M.r0+1e-9?'bad':'good')+'">'+pct(M.required,2)+'</span>':'—','for '+plural(M.remaining,'session')+' · at start it was '+pct(M.r0,2)+' ('+ppt((M.required||0)-M.r0)+')');
+  var eta=etaFor(M,M.geo);
+  h+=tile('Your pace',M.geo!=null?'<span class="'+cls(M.geo)+'">'+pct(M.geo,2)+'/day</span>':'—',M.geo!=null?('last '+M.recentN+': '+pct(M.rec5,2)+' · Dec 31 at this pace: <b>'+usdC(M.projPace)+'</b> · $1M '+(eta?(eta.within?'on '+dShort(eta.date):'≈ '+dShort(eta.date)+' '+eta.date.slice(0,4)):'not reached')):'Log sessions to see your pace');
+  var R=wr(M.W,M.L);
+  h+=tile('Win rate',R!=null?Math.round(R*100)+'%':'—',R!=null?'<b>'+M.W+'W / '+M.L+'L</b> · '+(M.cntDays?((M.W+M.L)/M.cntDays).toFixed(1):'0')+' trades/day':'Enter win/lost trades when you log');
+  h+=tile('Target hit rate',M.logged.length?Math.round(M.hits/M.logged.length*100)+'%':'—',M.logged.length?'<b>'+M.hits+'/'+M.logged.length+'</b> sessions · streak '+M.streak+' · best '+M.bestStreak:'No sessions logged');
   $('kpis').innerHTML=h;
 }
 
-/* ---------- render: stats row ---------- */
+/* ---------- performance stats ---------- */
 function renderStats(){
-  var h='';
-  function c(k,v){ h+='<div><div class="k">'+k+'</div><div class="v num">'+v+'</div></div>'; }
-  c('Best session',M.bestDay?'<span class="'+cls(M.bestDay.perRet)+'">'+pct(M.bestDay.perRet,1)+'</span> <span class="tiny muted">'+dShort(M.bestDay.date)+'</span>':'—');
-  c('Worst session',M.worstDay?'<span class="'+cls(M.worstDay.perRet)+'">'+pct(M.worstDay.perRet,1)+'</span> <span class="tiny muted">'+dShort(M.worstDay.date)+'</span>':'—');
-  c('Max drawdown',M.logged?'<span class="'+(M.maxDD<0?'bad':'')+'">'+(M.maxDD<0?pct(M.maxDD,1):'0.0%')+'</span>':'—');
-  c('Peak balance',M.logged?usdC(M.peak):'—');
-  c('Not logged',M.missing?'<span class="warn">'+plural(M.missing,'session')+'</span>':'0');
-  c('Sessions left',M.remaining+' <span class="tiny muted">of '+M.N+'</span>');
-  $('statRow').innerHTML=h;
+  var h='', avgG=mean(M.greens), avgR=mean(M.reds);
+  function c(k,v,s){ h+='<div><div class="k">'+k+'</div><div class="v num">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
+  h+='<div class="sec-title">Tracking the goal</div><div class="statgrid">';
+  var ts=trackStatus(M);
+  c('Status','<span class="status-pill '+ts.cls+'">'+ts.label+'</span>',M.required!=null?'needs '+pct(M.required,2)+'/day vs '+pct(M.r0,2)+' at start':'');
+  c('Balance vs ideal path','<span class="'+cls(M.current-M.idealNow)+'">'+signUsd(M.current-M.idealNow)+'</span>',pct(M.current/M.idealNow-1)+' · ideal '+usdC(M.idealNow));
+  c('Cost of a flat day',M.costFlat!=null?'<span class="bad">'+ppt(M.costFlat)+'</span>':'—','added to the daily target if a session makes 0%');
+  c('Sessions left',M.remaining+' <span class="tiny muted">of '+M.N+'</span>',M.next?'next: '+dLabel(M.next.date):'');
+  var eta=etaFor(M,M.geo), eta5=etaFor(M,M.rec5);
+  c('$1M ETA at your pace',eta?(eta.within?'<span class="good">'+dShort(eta.date)+'</span>':'<span class="bad">'+dShort(eta.date)+' '+eta.date.slice(0,4)+'</span>'):'—',M.geo!=null?'at '+pct(M.geo,2)+'/day average':'');
+  c('$1M ETA at recent pace',eta5?(eta5.within?'<span class="good">'+dShort(eta5.date)+'</span>':'<span class="bad">'+dShort(eta5.date)+' '+eta5.date.slice(0,4)+'</span>'):'—',M.rec5!=null?'last '+M.recentN+' sessions: '+pct(M.rec5,2)+'/day':'');
+  h+='</div><div class="sec-title">Daily results</div><div class="statgrid">';
+  c('Green / red days','<span class="good">'+M.greens.length+'</span> / <span class="bad">'+M.reds.length+'</span>'+(M.flats?' / '+M.flats:''),M.flats?'third number: flat days':'');
+  c('Avg green day',avgG!=null?'<span class="good">'+pct(avgG,2)+'</span>':'—','');
+  c('Avg red day',avgR!=null?'<span class="bad">'+pct(avgR,2)+'</span>':'—','');
+  c('Gain / loss ratio',avgG!=null&&avgR!=null?(avgG/Math.abs(avgR)).toFixed(2)+'×':'—','avg green ÷ avg red');
+  c('Best session',M.bestDay?'<span class="'+cls(M.bestDay.p)+'">'+pct(M.bestDay.p,2)+'</span>':'—',M.bestDay?dLabel(M.bestDay.date):'');
+  c('Worst session',M.worstDay?'<span class="'+cls(M.worstDay.p)+'">'+pct(M.worstDay.p,2)+'</span>':'—',M.worstDay?dLabel(M.worstDay.date):'');
+  c('Max drawdown',M.logged.length?'<span class="'+(M.maxDD<0?'bad':'')+'">'+(M.maxDD<0?pct(M.maxDD,1):'0.0%')+'</span>':'—','from the highest balance');
+  c('Longest red streak',M.maxRed?plural(M.maxRed,'session'):'0','current green streak: '+M.greenRun);
+  h+='</div><div class="sec-title">Trades</div><div class="statgrid">';
+  var R=wr(M.W,M.L);
+  c('Win rate',R!=null?Math.round(R*100)+'%':'—',M.W+' wins · '+M.L+' losses');
+  c('Total trades',String(M.W+M.L),M.cntDays?((M.W+M.L)/M.cntDays).toFixed(1)+' per session':'');
+  var aH=mean(M.hiWR.map(function(x){return x.p;})), aL=mean(M.loWR.map(function(x){return x.p;}));
+  c('Avg gain, win rate ≥ 50%',aH!=null?'<span class="'+cls(aH)+'">'+pct(aH,2)+'</span>':'—',plural(M.hiWR.length,'session'));
+  c('Avg gain, win rate < 50%',aL!=null?'<span class="'+cls(aL)+'">'+pct(aL,2)+'</span>':'—',plural(M.loWR.length,'session'));
+  var bestWR=null; M.logged.forEach(function(x){ var r=wr(x.w||0,x.l||0); if(r!=null&&(!bestWR||r>bestWR.r||(r===bestWR.r&&x.p>bestWR.x.p))) bestWR={r:r,x:x}; });
+  c('Best win-rate day',bestWR?Math.round(bestWR.r*100)+'%':'—',bestWR?dLabel(bestWR.x.date)+' · '+(bestWR.x.w||0)+'W/'+(bestWR.x.l||0)+'L':'');
+  c('Not logged',M.missingPast.length?'<span class="warn">'+plural(M.missingPast.length,'session')+'</span>':'0','past sessions without an entry');
+  h+='</div>';
+  $('statGrid').innerHTML=h;
 }
+
+/* ---------- scenarios ---------- */
+function renderScenarios(){
+  var rates=[0.05,0.10,0.15,0.20,0.25,0.30];
+  if(M.required!=null&&!M.reached) rates.push(M.required);
+  if(M.geo!=null) rates.push(M.geo);
+  rates=rates.filter(function(r,i,a){ return a.findIndex(function(q){return Math.abs(q-r)<1e-6;})===i; }).sort(function(a,b){return a-b;});
+  var h='<thead><tr><th class="l">Daily %</th><th>Dec 31 balance</th><th class="l">Reaches '+usdC(M.G)+'?</th></tr></thead><tbody>';
+  rates.forEach(function(r){
+    var fin=M.current*Math.pow(1+r,M.remaining), e=etaFor(M,r), isReq=M.required!=null&&Math.abs(r-M.required)<1e-9, isPace=M.geo!=null&&Math.abs(r-M.geo)<1e-9;
+    h+='<tr'+(isReq?' class="is-today"':'')+'><td class="l">'+pct(r,isReq||isPace?2:0)+(isReq?' <span class="tiny muted">needed</span>':'')+(isPace?' <span class="tiny muted">your pace</span>':'')+'</td><td>'+usdC(fin)+'</td><td class="l">'+
+      (fin>=M.G-0.005?'<span class="res hit">✓ '+(e?dShort(e.date):'')+'</span>':'<span class="res miss">✗ '+(e?'≈ '+dShort(e.date)+' '+e.date.slice(0,4):'no')+'</span>')+'</td></tr>';
+  });
+  $('scenTbl').innerHTML=h+'</tbody>';
+  $('scenNote').textContent='From '+usdC(M.current)+' over the '+plural(M.remaining,'session')+' left';
+}
+
+/* ---------- W/L stats row ---------- */
+function renderWLStats(){
+  var h='', R=wr(M.W,M.L);
+  function c(k,v){ h+='<div><div class="k">'+k+'</div><div class="v num">'+v+'</div></div>'; }
+  c('Wins',String(M.W)); c('Losses',String(M.L)); c('Win rate',R!=null?Math.round(R*100)+'%':'—');
+  var m=monthKey(M.ny.date), mw=0, ml=0; M.logged.forEach(function(x){ if(x.date.slice(0,7)===m){ mw+=x.w||0; ml+=x.l||0; } });
+  c('This month',wr(mw,ml)!=null?Math.round(wr(mw,ml)*100)+'% <span class="tiny muted">'+mw+'W/'+ml+'L</span>':'—');
+  $('wlStats').innerHTML=h;
+}
+function monthKey(d){ return d.slice(0,7); }
 
 /* ---------- chart helpers ---------- */
 var NS='http://www.w3.org/2000/svg';
@@ -736,135 +927,117 @@ function txt(parent,x,y,str,attrs){ var t=el('text',Object.assign({x:x,y:y,fill:
 function niceStep(range,count){ var raw=range/Math.max(count,1), mag=Math.pow(10,Math.floor(Math.log10(raw))), n=raw/mag; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*mag; }
 function linTicks(lo,hi,count){ var st=niceStep(hi-lo,count), a=Math.ceil(lo/st)*st, out=[]; for(var v=a; v<=hi+st*1e-6; v+=st) out.push(Math.round(v/st)*st); return out; }
 function logTicks(lo,hi,maxN){
-  var e0=Math.floor(Math.log10(lo)), e1=Math.ceil(Math.log10(hi)), out=[], mults=[1,2,5];
-  for(var e=e0;e<=e1;e++) mults.forEach(function(m){ var v=m*Math.pow(10,e); if(v>=lo&&v<=hi) out.push(v); });
-  if(out.length>maxN){ out=[]; for(e=e0;e<=e1;e++){ var v=Math.pow(10,e); if(v>=lo&&v<=hi) out.push(v);} }
+  var e0=Math.floor(Math.log10(lo)), e1=Math.ceil(Math.log10(hi)), out=[], mults=[1,2,5], e, v;
+  for(e=e0;e<=e1;e++) mults.forEach(function(m){ v=m*Math.pow(10,e); if(v>=lo&&v<=hi) out.push(v); });
+  if(out.length>maxN){ out=[]; for(e=e0;e<=e1;e++){ v=Math.pow(10,e); if(v>=lo&&v<=hi) out.push(v);} }
   if(out.length>maxN){ var step=Math.ceil(out.length/maxN); out=out.filter(function(_,i){return i%step===0;}); }
   return out;
 }
 function showTip(html,cx,cy){
   tip.innerHTML=html; tip.classList.add('on');
-  var w=tip.offsetWidth, h=tip.offsetHeight, vw=document.documentElement.clientWidth, vh=window.innerHeight;
-  var x=cx+14, y=cy-h-12;
-  if(x+w>vw-8) x=cx-w-14; if(x<8) x=8;
-  if(y<8) y=cy+16; if(y+h>vh-8) y=vh-h-8;
+  var w=tip.offsetWidth, h=tip.offsetHeight, vw=document.documentElement.clientWidth, vh=window.innerHeight, x=cx+14, y=cy-h-12;
+  if(x+w>vw-8) x=cx-w-14; if(x<8) x=8; if(y<8) y=cy+16; if(y+h>vh-8) y=vh-h-8;
   tip.style.left=x+'px'; tip.style.top=y+'px';
 }
 function hideTip(){ tip.classList.remove('on'); }
 function tipRow(k,v){ return '<div class="r"><span>'+k+'</span><span>'+v+'</span></div>'; }
+function roundedBar(x0,w,yBase,yEnd,rad){
+  var h=Math.abs(yEnd-yBase); rad=Math.min(rad,h,w/2);
+  if(h<0.5) return 'M'+x0+','+yBase+'h'+w+'v-1h'+(-w)+'Z';
+  if(yEnd<yBase) return 'M'+x0+','+yBase+'V'+(yEnd+rad)+'Q'+x0+','+yEnd+' '+(x0+rad)+','+yEnd+'H'+(x0+w-rad)+'Q'+(x0+w)+','+yEnd+' '+(x0+w)+','+(yEnd+rad)+'V'+yBase+'Z';
+  return 'M'+x0+','+yBase+'V'+(yEnd-rad)+'Q'+x0+','+yEnd+' '+(x0+rad)+','+yEnd+'H'+(x0+w-rad)+'Q'+(x0+w)+','+yEnd+' '+(x0+w)+','+(yEnd-rad)+'V'+yBase+'Z';
+}
+function xTicks(g,vis,x,yPos,offset,W,m,N){
+  var every=Math.max(1,Math.ceil(N/((W-m.l-m.r)/70)));
+  vis.forEach(function(p){ if((p.idx-1)%every===0) txt(g,x(p.idx)+(offset||0),yPos,dShort(p.date),{'text-anchor':'middle'}); });
+}
 
 /* ---------- chart: balance ---------- */
 function drawBalance(){
   var box=$('balChart'); box.innerHTML='';
-  var W=Math.max(box.clientWidth,280), H=Math.round(clamp(W*0.42,240,380));
-  var narrow=W<520, m={t:18,r:narrow?44:64,b:28,l:narrow?46:56};
+  var W=Math.max(box.clientWidth,280), H=Math.round(clamp(W*0.42,240,380)), narrow=W<520, m={t:18,r:narrow?48:70,b:28,l:narrow?46:56};
   var N=viewN(), s=M.s; if(!N){ box.textContent='No sessions in range.'; return; }
   var vis=M.sessions.filter(function(x){return x.idx<=N;});
-  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'Actual balance versus plan balance by session'},box);
-  var planPts=[{i:0,v:s.startCapital,date:null}].concat(vis.map(function(x){return {i:x.idx,v:x.planEnd,date:x.date,x:x};}));
-  var actPts=[{i:0,v:s.startCapital,date:null}].concat(vis.filter(function(x){return x.actual!=null;}).map(function(x){return {i:x.idx,v:x.actual,date:x.date,x:x};}));
-  var vals=planPts.concat(actPts).map(function(p){return p.v;}).filter(function(v){return v>0;});
-  var lo, hi, y, ticks, isLog=scaleMode==='log';
-  if(isLog){
-    lo=Math.min.apply(null,vals)*0.85; hi=Math.max.apply(null,vals)*1.15;
-    var l0=Math.log(lo), l1=Math.log(hi);
-    y=function(v){ return m.t+(1-(Math.log(Math.max(v,lo))-l0)/(l1-l0))*(H-m.t-m.b); };
-    ticks=logTicks(lo,hi,narrow?5:7);
-  } else {
-    lo=0; hi=Math.max.apply(null,vals)*1.06;
-    y=function(v){ return m.t+(1-(v-lo)/(hi-lo))*(H-m.t-m.b); };
-    ticks=linTicks(0,hi,5);
-  }
+  var ideal=[{i:0,v:M.start}].concat(vis.map(function(x){return {i:x.idx,v:x.ideal};}));
+  var act=[{i:0,v:M.start}].concat(vis.filter(function(x){return x.hist;}).map(function(x){return {i:x.idx,v:x.endBal,x:x};}));
+  var need=[]; if(M.required!=null&&!M.reached&&M.lastIdx<N){ need.push({i:M.lastIdx,v:M.current}); vis.forEach(function(x){ if(x.future) need.push({i:x.idx,v:x.targetBal}); }); }
+  var vals=ideal.concat(act,need).map(function(p){return p.v;}).filter(function(v){return v>0;});
+  var lo,hi,y,ticks,isLog=scaleMode==='log';
+  if(isLog){ lo=Math.min.apply(null,vals)*0.85; hi=Math.max.apply(null,vals)*1.15; var l0=Math.log(lo), l1=Math.log(hi);
+    y=function(v){ return m.t+(1-(Math.log(Math.max(v,lo))-l0)/(l1-l0))*(H-m.t-m.b); }; ticks=logTicks(lo,hi,narrow?5:7); }
+  else { lo=0; hi=Math.max.apply(null,vals)*1.06; y=function(v){ return m.t+(1-(v-lo)/(hi-lo))*(H-m.t-m.b); }; ticks=linTicks(0,hi,5); }
   var x=function(i){ return m.l+(i/N)*(W-m.l-m.r); };
-  var g=el('g',{},svg);
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'Balance compared with the ideal path and the path needed from now'},box), g=el('g',{},svg);
   ticks.forEach(function(t){ var yy=y(t); el('line',{x1:m.l,x2:W-m.r,y1:yy,y2:yy,stroke:'var(--grid)','stroke-width':1},g); txt(g,m.l-8,yy+4,usdAxis(t),{'text-anchor':'end'}); });
   el('line',{x1:m.l,x2:W-m.r,y1:H-m.b,y2:H-m.b,stroke:'var(--axis)','stroke-width':1},g);
-  // x ticks: Mondays / every k sessions
-  var every=Math.max(1,Math.ceil(N/((W-m.l-m.r)/70)));
-  var tickIdx=[]; vis.forEach(function(p){ if((p.idx-1)%every===0) tickIdx.push(p); });
-  tickIdx.forEach(function(p){ var xx=x(p.idx); el('line',{x1:xx,x2:xx,y1:H-m.b,y2:H-m.b+4,stroke:'var(--axis)'},g); txt(g,xx,H-m.b+16,dShort(p.date),{'text-anchor':'middle'}); });
-  // today marker
-  var todayIdx=vis.find(function(p){return p.isToday;}); var tI=todayIdx?todayIdx.idx:(M.elapsed>0&&M.elapsed<N?M.elapsed+0.5:null);
+  xTicks(g,vis,x,H-m.b+16,0,W,m,N);
+  var tI=(vis.find(function(p){return p.isToday;})||{}).idx; if(tI==null&&M.elapsed>0&&M.elapsed<N) tI=M.elapsed+0.5;
   if(tI!=null){ var tx=x(tI); el('line',{x1:tx,x2:tx,y1:m.t,y2:H-m.b,stroke:'var(--accent)','stroke-width':1,'stroke-opacity':.35},g); txt(g,tx+4,m.t+8,'Today',{fill:'var(--accent)','font-size':10.5}); }
-  // plan line
-  var pd=planPts.map(function(p,k){return (k?'L':'M')+x(p.i).toFixed(1)+','+y(p.v).toFixed(1);}).join('');
-  el('path',{d:pd,fill:'none',stroke:'var(--plan)','stroke-width':2,'stroke-dasharray':'5 4','stroke-linecap':'round','stroke-linejoin':'round'},svg);
-  // actual area + line
-  if(actPts.length>1){
-    var ad=actPts.map(function(p,k){return (k?'L':'M')+x(p.i).toFixed(1)+','+y(p.v).toFixed(1);}).join('');
-    el('path',{d:ad+'L'+x(actPts[actPts.length-1].i).toFixed(1)+','+(H-m.b)+'L'+x(0)+','+(H-m.b)+'Z',fill:'var(--accent)','fill-opacity':.08,stroke:'none'},svg);
+  function path(pts){ return pts.map(function(p,k){return (k?'L':'M')+x(p.i).toFixed(1)+','+y(p.v).toFixed(1);}).join(''); }
+  el('path',{d:path(ideal),fill:'none',stroke:'var(--plan)','stroke-width':2,'stroke-dasharray':'5 4','stroke-linecap':'round'},svg);
+  if(need.length>1) el('path',{d:path(need),fill:'none',stroke:'var(--accent)','stroke-width':2,'stroke-dasharray':'1 5','stroke-linecap':'round','stroke-opacity':.85},svg);
+  if(act.length>1){
+    var ad=path(act);
+    el('path',{d:ad+'L'+x(act[act.length-1].i).toFixed(1)+','+(H-m.b)+'L'+x(0)+','+(H-m.b)+'Z',fill:'var(--accent)','fill-opacity':.08},svg);
     el('path',{d:ad,fill:'none',stroke:'var(--accent)','stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'},svg);
   }
-  actPts.forEach(function(p,k){ if(k===0) return; el('circle',{cx:x(p.i),cy:y(p.v),r:3.5,fill:'var(--accent)',stroke:'var(--surface)','stroke-width':2},svg); });
-  // end labels
-  var lp=planPts[planPts.length-1]; txt(svg,x(lp.i)+6,y(lp.v)+4,usdC(lp.v).replace('.00',''),{fill:'var(--ink-2)','font-size':11.5,'font-weight':600});
-  if(actPts.length>1){ var la=actPts[actPts.length-1], lx=x(la.i), ly=y(la.v), right=lx<W-m.r-60;
-    txt(svg,right?lx+8:lx-8,ly+(la.v>=la.x.planEnd?-8:16),usdC(la.v),{fill:'var(--ink)','font-size':12,'font-weight':600,'text-anchor':right?'start':'end'}); }
-  // hover layer
+  act.forEach(function(p,k){ if(k&&p.x&&p.x.logged) el('circle',{cx:x(p.i),cy:y(p.v),r:3.5,fill:'var(--accent)',stroke:'var(--surface)','stroke-width':2},svg); });
+  var li=ideal[ideal.length-1]; txt(svg,x(li.i)+6,y(li.v)+4,usdC(li.v).replace('.00',''),{fill:'var(--ink-2)','font-size':11.5,'font-weight':600});
+  if(need.length>1&&N===M.N){ var ln=need[need.length-1]; txt(svg,x(ln.i)+6,y(ln.v)-8,'Goal',{fill:'var(--accent)','font-size':11,'font-weight':600}); }
+  if(act.length>1){ var la=act[act.length-1], lx=x(la.i), ly=y(la.v), right=lx<W-m.r-70;
+    txt(svg,right?lx+8:lx-8,ly+(la.v>=la.x.ideal?-9:17),usdC(la.v),{fill:'var(--ink)','font-size':12,'font-weight':600,'text-anchor':right?'start':'end'}); }
   var cross=el('line',{y1:m.t,y2:H-m.b,stroke:'var(--axis)','stroke-width':1,visibility:'hidden'},svg);
-  var dotP=el('circle',{r:4.5,fill:'var(--plan)',stroke:'var(--surface)','stroke-width':2,visibility:'hidden'},svg);
   var dotA=el('circle',{r:5,fill:'var(--accent)',stroke:'var(--surface)','stroke-width':2,visibility:'hidden'},svg);
   var hit=el('rect',{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:'transparent',style:'cursor:crosshair'},svg);
   function move(ev){
     var r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)*(W/r.width), i=Math.round(clamp((px-m.l)/(W-m.l-m.r),0,1)*N);
-    var p=planPts[i]; if(!p) return;
     var xx=x(i); cross.setAttribute('x1',xx); cross.setAttribute('x2',xx); cross.setAttribute('visibility','visible');
-    dotP.setAttribute('cx',xx); dotP.setAttribute('cy',y(p.v)); dotP.setAttribute('visibility','visible');
-    var sx=p.x, html;
-    if(i===0){ html='<div class="t">Start</div>'+tipRow('Capital',usd(s.startCapital)); dotA.setAttribute('visibility','hidden'); }
-    else{
-      html='<div class="t">Day '+i+' · '+dLabel(sx.date)+'</div>'+tipRow('Plan',usd(sx.planEnd));
-      if(sx.actual!=null){ html+=tipRow('Actual',usd(sx.actual))+tipRow('vs plan','<span class="'+cls(sx.vsPlan)+'">'+pct(sx.vsPlan)+'</span>')+tipRow('Session',(sx.hit?'✓ hit ':'✗ missed ')+pct(sx.ret,1));
-        dotA.setAttribute('cx',xx); dotA.setAttribute('cy',y(sx.actual)); dotA.setAttribute('visibility','visible'); }
-      else { html+=tipRow('Actual',sx.past?'not logged':'upcoming'); dotA.setAttribute('visibility','hidden'); }
+    var h, sx=vis[i-1];
+    if(i===0){ h='<div class="t">Start</div>'+tipRow('Capital',usd(M.start)); dotA.setAttribute('visibility','hidden'); }
+    else {
+      h='<div class="t">Day '+i+' · '+dLabel(sx.date)+'</div>';
+      if(sx.hist){ h+=tipRow('Balance',usd(sx.endBal))+tipRow('Gain',sx.logged?pct(sx.p,2):'not logged (0%)')+tipRow('Target that day',pct(sx.req,2))+tipRow('Ideal path',usd(sx.ideal))+tipRow('vs ideal','<span class="'+cls(sx.vsIdeal)+'">'+pct(sx.vsIdeal)+'</span>');
+        dotA.setAttribute('cx',xx); dotA.setAttribute('cy',y(sx.endBal)); dotA.setAttribute('visibility','visible'); }
+      else { h+=tipRow('Needed balance',usd(sx.targetBal))+tipRow('Target',pct(sx.req,2))+tipRow('Ideal path',usd(sx.ideal)); dotA.setAttribute('visibility','hidden'); }
     }
-    showTip(html,ev.clientX,ev.clientY);
+    showTip(h,ev.clientX,ev.clientY);
   }
-  function leave(){ cross.setAttribute('visibility','hidden'); dotP.setAttribute('visibility','hidden'); dotA.setAttribute('visibility','hidden'); hideTip(); }
+  function leave(){ cross.setAttribute('visibility','hidden'); dotA.setAttribute('visibility','hidden'); hideTip(); }
   hit.addEventListener('pointermove',move); hit.addEventListener('pointerdown',move); hit.addEventListener('pointerleave',leave);
 }
 
-/* ---------- chart: returns ---------- */
-function roundedBar(x0,w,yBase,yEnd,rad){
-  var h=Math.abs(yEnd-yBase); rad=Math.min(rad,h,w/2);
-  if(h<0.5) return 'M'+x0+','+yBase+'h'+w;
-  if(yEnd<yBase){ // positive
-    return 'M'+x0+','+yBase+'V'+(yEnd+rad)+'Q'+x0+','+yEnd+' '+(x0+rad)+','+yEnd+'H'+(x0+w-rad)+'Q'+(x0+w)+','+yEnd+' '+(x0+w)+','+(yEnd+rad)+'V'+yBase+'Z';
-  }
-  return 'M'+x0+','+yBase+'V'+(yEnd-rad)+'Q'+x0+','+yEnd+' '+(x0+rad)+','+yEnd+'H'+(x0+w-rad)+'Q'+(x0+w)+','+yEnd+' '+(x0+w)+','+(yEnd-rad)+'V'+yBase+'Z';
-}
-function drawReturns(){
-  var box=$('retChart'); box.innerHTML='';
-  var W=Math.max(box.clientWidth,280), H=Math.round(clamp(W*0.3,200,280)), narrow=W<520;
-  var m={t:16,r:narrow?40:56,b:28,l:narrow?44:52}, N=viewN(); if(!N) return;
+/* ---------- chart: daily % ---------- */
+function drawPct(){
+  var box=$('pctChart'); box.innerHTML='';
+  var W=Math.max(box.clientWidth,280), H=Math.round(clamp(W*0.32,210,300)), narrow=W<520, m={t:16,r:narrow?46:60,b:28,l:narrow?44:52};
+  var N=viewN(); if(!N) return;
   var vis=M.sessions.filter(function(x){return x.idx<=N;});
-  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'Daily return per session versus target'},box);
-  var data=vis.filter(function(x){return x.actual!=null&&x.perRet!=null;});
-  var rs=data.map(function(d){return d.perRet;});
-  var lo=Math.min(-0.1,rs.length?Math.min.apply(null,rs)*1.15:0), hi=Math.max(M.r*1.5,rs.length?Math.max.apply(null,rs)*1.15:0);
+  var ps=vis.filter(function(x){return x.logged;}).map(function(x){return x.p;}), rq=vis.map(function(x){return x.req;}).filter(function(v){return v!=null;});
+  var lo=Math.min(-0.05,ps.length?Math.min.apply(null,ps)*1.15:0), hi=Math.max(0.25,ps.length?Math.max.apply(null,ps)*1.12:0,rq.length?Math.max.apply(null,rq)*1.25:0);
   var y=function(v){ return m.t+(1-(v-lo)/(hi-lo))*(H-m.t-m.b); };
-  var band=(W-m.l-m.r)/N, bw=Math.max(2,Math.min(24,band*0.66));
-  var x=function(i){ return m.l+(i-1)*band; };
-  var g=el('g',{},svg);
-  linTicks(lo,hi,narrow?4:5).forEach(function(t){ var yy=y(t); el('line',{x1:m.l,x2:W-m.r,y1:yy,y2:yy,stroke:Math.abs(t)<1e-9?'var(--axis)':'var(--grid)','stroke-width':1},g); txt(g,m.l-8,yy+4,pct(t,0).replace('+',''),{'text-anchor':'end'}); });
-  var every=Math.max(1,Math.ceil(N/((W-m.l-m.r)/70)));
-  vis.forEach(function(p){ if((p.idx-1)%every===0) txt(g,x(p.idx)+band/2,H-m.b+16,dShort(p.date),{'text-anchor':'middle'}); });
-  // target line
-  var ty=y(M.r); el('line',{x1:m.l,x2:W-m.r,y1:ty,y2:ty,stroke:'var(--ink-2)','stroke-width':1.5,'stroke-dasharray':'5 4'},svg);
-  txt(svg,W-m.r+6,ty+4,M.s.dailyTarget+'%',{fill:'var(--ink-2)','font-size':11.5,'font-weight':600});
+  var band=(W-m.l-m.r)/N, bw=Math.max(2,Math.min(24,band*0.62)), x=function(i){ return m.l+(i-1)*band; };
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'Daily gain per session versus the dynamic target'},box), g=el('g',{},svg);
+  linTicks(lo,hi,narrow?4:5).forEach(function(t){ var yy=y(t); el('line',{x1:m.l,x2:W-m.r,y1:yy,y2:yy,stroke:Math.abs(t)<1e-9?'var(--axis)':'var(--grid)','stroke-width':1},g); txt(g,m.l-8,yy+4,pctU(t,0),{'text-anchor':'end'}); });
+  xTicks(g,vis,x,H-m.b+16,band/2,W,m,N);
   var y0=y(0);
-  data.forEach(function(d){
-    var x0=x(d.idx)+(band-bw)/2;
-    el('path',{d:roundedBar(x0,bw,y0,y(d.perRet),4),fill:d.hit?'var(--good)':'var(--bad)'},svg);
+  vis.forEach(function(d){
+    if(d.logged) el('path',{d:roundedBar(x(d.idx)+(band-bw)/2,bw,y0,y(d.p),4),fill:d.hit?'var(--good)':'var(--bad)'},svg);
+    else if(d.assumed) el('circle',{cx:x(d.idx)+band/2,cy:y0,r:3,fill:'var(--warn)'},svg);
   });
-  if(!data.length) txt(svg,m.l+(W-m.l-m.r)/2,m.t+(H-m.t-m.b)/2,'Bars appear as you log balances',{'text-anchor':'middle',fill:'var(--muted)','font-size':12.5});
-  // hover bands
+  // target step line: history solid, future dashed
+  function stepPath(list){ var dd=''; list.forEach(function(d,k){ var yy=y(d.req).toFixed(1); dd+=(k?'L'+x(d.idx).toFixed(1)+','+yy:'M'+x(d.idx).toFixed(1)+','+yy)+'H'+(x(d.idx)+band).toFixed(1); }); return dd; }
+  var hist=vis.filter(function(d){return d.hist&&d.req!=null;}), fut=vis.filter(function(d){return d.future&&d.req!=null;});
+  if(hist.length) el('path',{d:stepPath(hist),fill:'none',stroke:'var(--ink-2)','stroke-width':1.75,'stroke-linejoin':'round'},svg);
+  if(fut.length) el('path',{d:stepPath(fut),fill:'none',stroke:'var(--ink-2)','stroke-width':1.5,'stroke-dasharray':'4 4'},svg);
+  if(M.required!=null&&!M.reached){ var ly=y(M.required); txt(svg,W-m.r+6,ly+4,pctU(M.required,1),{fill:'var(--ink-2)','font-size':11.5,'font-weight':600}); }
+  if(!ps.length) txt(svg,m.l+(W-m.l-m.r)/2,m.t+(H-m.t-m.b)/2,'Bars appear as you log sessions',{'text-anchor':'middle','font-size':12.5});
   vis.forEach(function(d){
     var r=el('rect',{x:x(d.idx),y:m.t,width:band,height:H-m.t-m.b,fill:'transparent'},svg);
     function mv(ev){
       var h='<div class="t">Day '+d.idx+' · '+dLabel(d.date)+'</div>';
-      if(d.actual!=null) h+=tipRow('Return',pct(d.ret,2)+(d.k>1?' / '+d.k+' sessions':''))+(d.k>1?tipRow('Per session',pct(d.perRet,2)):'')+tipRow('Target',pct(Math.pow(1+M.r,d.k)-1))+tipRow('Balance',usd(d.actual))+tipRow('Result',d.hit?'✓ Hit':'✗ Missed');
-      else h+=tipRow('Status',d.past?'Not logged':'Upcoming')+tipRow('Plan balance',usd(d.planEnd));
+      if(d.logged) h+=tipRow('Gain',pct(d.p,2))+tipRow('Target',pct(d.req,2))+tipRow('Result',d.hit?'✓ Hit':'✗ '+((d.req-d.p)*100).toFixed(2)+' pp short')+tipRow('Balance',usd(d.endBal))+(d.w!=null||d.l!=null?tipRow('Trades',(d.w||0)+'W / '+(d.l||0)+'L'):'');
+      else if(d.assumed) h+=tipRow('Status','Not logged (0%)')+tipRow('Target',pct(d.req,2));
+      else h+=tipRow('Status',d.past?'Not logged':'Upcoming')+tipRow('Target',pct(d.req,2))+tipRow('Needed balance',usd(d.targetBal));
       showTip(h,ev.clientX,ev.clientY); r.setAttribute('fill','var(--accent-wash)');
     }
     r.addEventListener('pointermove',mv); r.addEventListener('pointerdown',mv);
@@ -872,23 +1045,109 @@ function drawReturns(){
   });
 }
 
-/* ---------- calendar ---------- */
-function renderCalendar(){
-  var c=$('cal'), h='<div></div>'+['Mon','Tue','Wed','Thu','Fri'].map(function(d){return '<div class="wh">'+d+'</div>';}).join('');
-  var weeks=groupWeeks();
-  weeks.forEach(function(wk,wi){
-    h+='<div class="wk">W'+(wi+1)+'</div>';
-    for(var dd=0; dd<5; dd++){
-      var date=addDays(wk.monday,dd), item=wk.byDate[date];
-      if(!item){ h+='<div class="cell empty"></div>'; continue; }
-      var t=new Date(parseD(date)), lab=((t.getUTCDate()===1||date===M.days[0].date)?'<small>'+MON[t.getUTCMonth()]+'</small>':'')+t.getUTCDate();
-      if(item.closed){ h+='<div class="cell closed" data-date="'+date+'" data-closed="1"><span class="d">'+lab+'</span><span class="g tiny">Closed</span></div>'; continue; }
-      var st=item.actual!=null?(item.hit?'hit':'miss'):(item.past?'gap':'future'), g=st==='hit'?'✓':st==='miss'?'✗':st==='gap'?'?':'';
-      h+='<div class="cell '+st+(item.isToday?' today':'')+'" data-date="'+date+'" style="cursor:pointer" tabindex="0" role="button" aria-label="Day '+item.idx+', '+dLabel(date)+'"><span class="d">'+lab+'</span><span class="g">'+g+'</span></div>';
-    }
+/* ---------- chart: wins / losses ---------- */
+function drawWL(){
+  var box=$('wlChart'); box.innerHTML='';
+  var W=Math.max(box.clientWidth,260), H=Math.round(clamp(W*0.42,170,240)), m={t:12,r:12,b:26,l:34};
+  var N=viewN(), vis=M.sessions.filter(function(x){return x.idx<=N;}), data=vis.filter(function(x){return x.logged&&(x.w!=null||x.l!=null);});
+  var maxW=Math.max(3,Math.max.apply(null,data.map(function(d){return d.w||0;}).concat([0]))), maxL=Math.max(3,Math.max.apply(null,data.map(function(d){return d.l||0;}).concat([0])));
+  var top=maxW*1.15, bot=-maxL*1.15, y=function(v){ return m.t+(1-(v-bot)/(top-bot))*(H-m.t-m.b); };
+  var band=(W-m.l-m.r)/N, bw=Math.max(2,Math.min(20,band*0.62)), x=function(i){ return m.l+(i-1)*band; };
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'Win and lost trades per session'},box), g=el('g',{},svg);
+  linTicks(bot,top,4).forEach(function(t){ var yy=y(t); el('line',{x1:m.l,x2:W-m.r,y1:yy,y2:yy,stroke:Math.abs(t)<1e-9?'var(--axis)':'var(--grid)','stroke-width':1},g); txt(g,m.l-6,yy+4,String(Math.abs(Math.round(t))),{'text-anchor':'end'}); });
+  xTicks(g,vis,x,H-m.b+16,band/2,W,{l:m.l,r:m.r},N);
+  var y0=y(0);
+  data.forEach(function(d){
+    var x0=x(d.idx)+(band-bw)/2;
+    if(d.w) el('path',{d:roundedBar(x0,bw,y0-1,y(d.w),3),fill:'var(--good)'},svg);
+    if(d.l) el('path',{d:roundedBar(x0,bw,y0+1,y(-d.l),3),fill:'var(--bad)'},svg);
   });
-  c.innerHTML=h;
+  if(!data.length) txt(svg,m.l+(W-m.l-m.r)/2,m.t+(H-m.t-m.b)/2,'Enter win / lost trades when you log',{'text-anchor':'middle','font-size':12.5});
+  txt(svg,m.l+4,m.t+10,'wins',{'font-size':10.5}); txt(svg,m.l+4,H-m.b-4,'losses',{'font-size':10.5});
+  data.forEach(function(d){
+    var r=el('rect',{x:x(d.idx),y:m.t,width:band,height:H-m.t-m.b,fill:'transparent'},svg);
+    function mv(ev){ var R=wr(d.w||0,d.l||0); showTip('<div class="t">Day '+d.idx+' · '+dLabel(d.date)+'</div>'+tipRow('Wins',String(d.w||0))+tipRow('Losses',String(d.l||0))+tipRow('Win rate',R!=null?Math.round(R*100)+'%':'—')+tipRow('Gain',pct(d.p,2)),ev.clientX,ev.clientY); r.setAttribute('fill','var(--accent-wash)'); }
+    r.addEventListener('pointermove',mv); r.addEventListener('pointerdown',mv);
+    r.addEventListener('pointerleave',function(){ hideTip(); r.setAttribute('fill','transparent'); });
+  });
 }
+
+/* ---------- journal ---------- */
+var STOP=('yang dan di ke dari untuk dengan karena saat ini itu ada tidak tak aku saya kita kami juga lagi sudah belum akan jadi atau pada dalam terlalu sangat lebih kurang bisa harus masih banyak sedikit setelah sebelum ketika kalau jika tapi tetapi namun hanya cuma sama seperti agar supaya oleh bahwa hari trade trading saham the and for with that this was were have has had but not too very into from then when after before because about just over under out them they their there what which while would could should been being also only more most some than its it\'s dont don\'t didn\'t').split(' ');
+var STOPSET={}; STOP.forEach(function(w){ STOPSET[w]=1; });
+function tagsOf(t){ var out=[], re=/#[\p{L}\p{N}_-]+/gu, m; t=t||''; while((m=re.exec(t))) out.push(m[0].toLowerCase()); return out.filter(function(v,i,a){return a.indexOf(v)===i;}); }
+function wordsOf(t){ return (t||'').toLowerCase().replace(/#[\p{L}\p{N}_-]+/gu,' ').split(/[^\p{L}\p{N}]+/u).filter(function(w){ return w.length>=4&&!STOPSET[w]&&!/^\d+$/.test(w); }); }
+function noteHTML(t){ return esc(t).replace(/#[\p{L}\p{N}_-]+/gu,function(m){ return '<span class="ht">'+m+'</span>'; }).replace(/\n/g,'<br>'); }
+function reviewHTML(t){
+  var lines=String(t).split(/\r?\n/), out='', inList=false;
+  function inline(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>'); }
+  lines.forEach(function(raw){
+    var l=raw.trim();
+    if(/^[-*•]\s+/.test(l)){ if(!inList){ out+='<ul>'; inList=true; } out+='<li>'+inline(l.replace(/^[-*•]\s+/,''))+'</li>'; return; }
+    if(inList){ out+='</ul>'; inList=false; }
+    if(!l) return;
+    if(/^#{1,4}\s+/.test(l)) out+='<h4>'+inline(l.replace(/^#{1,4}\s+/,''))+'</h4>'; else out+='<p>'+inline(l)+'</p>';
+  });
+  if(inList) out+='</ul>';
+  return out;
+}
+function journalMonths(){ var ms=[]; M.sessions.forEach(function(x){ var k=monthKey(x.date); if(ms.indexOf(k)<0) ms.push(k); }); return ms; }
+function renderJournal(){
+  var months=journalMonths(); if(!months.length){ $('monthSeg').innerHTML=''; return; }
+  if(!jMonth||months.indexOf(jMonth)<0){ var cur=monthKey(M.ny.date); jMonth=months.indexOf(cur)>=0?cur:(cur<months[0]?months[0]:months[months.length-1]); }
+  $('monthSeg').innerHTML=months.map(function(k){ return '<button type="button" data-month="'+k+'" aria-pressed="'+(k===jMonth)+'">'+MON[+k.slice(5,7)-1]+'</button>'; }).join('');
+  var mName=MONTHS[+jMonth.slice(5,7)-1]+' '+jMonth.slice(0,4);
+  // AI review
+  var rv=(S.reviews||[]).filter(function(r){return r.month===jMonth;}).pop();
+  if(rv) $('aiReview').innerHTML='<div class="review">'+reviewHTML(rv.summary)+'</div><p class="tiny muted" style="margin-top:6px">Written by Claude'+(rv.at?' on '+new Date(rv.at).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'}):'')+' from your '+mName+' notes.</p>';
+  else { var y=+jMonth.slice(0,4), mo=+jMonth.slice(5,7), nm=mo===12?'Jan 1, '+(y+1):MON[mo]+' 1';
+    $('aiReview').innerHTML='<div class="empty-note">Claude reviews your '+mName+' notes automatically on <b>'+nm+'</b> and writes the conclusions here: which patterns worked, what caused losses, and what to change next month.</div>'; }
+  // Auto summary
+  var ms=M.sessions.filter(function(x){return monthKey(x.date)===jMonth;}), lg=ms.filter(function(x){return x.logged;});
+  var hist=ms.filter(function(x){return x.hist;}), h='';
+  if(!lg.length){ h='<div class="empty-note">No sessions logged in '+mName+' yet.</div>'; }
+  else {
+    var sb=hist[0].startBal, eb=hist[hist.length-1].endBal, tgt=hist.reduce(function(a,x){return a*(1+x.req);},1)-1, mret=eb/sb-1;
+    var mw=0, ml=0; lg.forEach(function(x){ mw+=x.w||0; ml+=x.l||0; });
+    var hitN=lg.filter(function(x){return x.hit;}).length, best=lg.reduce(function(a,x){return !a||x.p>a.p?x:a;},null), worst=lg.reduce(function(a,x){return !a||x.p<a.p?x:a;},null);
+    h+='<div class="statgrid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">'+
+      '<div><div class="k">Month return</div><div class="v num '+cls(mret)+'">'+pct(mret)+'</div><div class="s">target '+pct(tgt)+'</div></div>'+
+      '<div><div class="k">Target hit</div><div class="v num">'+hitN+'/'+lg.length+'</div><div class="s">sessions</div></div>'+
+      '<div><div class="k">Win rate</div><div class="v num">'+(wr(mw,ml)!=null?Math.round(wr(mw,ml)*100)+'%':'—')+'</div><div class="s">'+mw+'W / '+ml+'L</div></div>'+
+      '<div><div class="k">Best / worst</div><div class="v num"><span class="'+cls(best.p)+'">'+pct(best.p,1)+'</span> / <span class="'+cls(worst.p)+'">'+pct(worst.p,1)+'</span></div><div class="s">'+dShort(best.date)+' / '+dShort(worst.date)+'</div></div></div>';
+    var cats=[['np','Patterns recognized'],['nl','What made trades lose'],['nw','What made trades win']], withNotes=lg.filter(function(x){return x.hasNotes;}).length;
+    h+='<p class="small muted" style="margin:10px 0 2px">'+plural(withNotes,'session')+' with notes this month.</p>';
+    cats.forEach(function(c){
+      var tags={}, words={}, k=c[0];
+      lg.forEach(function(x){ var t=x[k]; if(!t) return;
+        tagsOf(t).forEach(function(tg){ var o=tags[tg]||(tags[tg]={n:0,p:[],w:0,l:0}); o.n++; o.p.push(x.p); o.w+=x.w||0; o.l+=x.l||0; });
+        wordsOf(t).forEach(function(w){ words[w]=(words[w]||0)+1; }); });
+      var tl=Object.keys(tags).sort(function(a,b){ return tags[b].n-tags[a].n||mean(tags[b].p)-mean(tags[a].p); }).slice(0,6);
+      var wl=Object.keys(words).filter(function(w){return words[w]>1;}).sort(function(a,b){return words[b]-words[a];}).slice(0,6);
+      h+='<div class="sec-title" style="margin-top:12px">'+c[1]+'</div>';
+      if(tl.length) h+='<div class="tagrow">'+tl.map(function(tg){ var o=tags[tg], R=wr(o.w,o.l); return '<span class="tag"><b class="ht">'+esc(tg)+'</b> ×'+o.n+'<span>avg '+pct(mean(o.p),1)+(R!=null?' · WR '+Math.round(R*100)+'%':'')+'</span></span>'; }).join('')+'</div>';
+      if(wl.length) h+='<div class="tagrow">'+wl.map(function(w){ return '<span class="tag">'+esc(w)+' <span>×'+words[w]+'</span></span>'; }).join('')+'</div>';
+      if(!tl.length&&!wl.length) h+='<p class="small muted">Nothing repeated yet. Add #tags to your notes to group them.</p>';
+    });
+  }
+  $('autoSum').innerHTML=h;
+  // entries
+  var items=lg.slice().reverse(), jl='';
+  if(!items.length) jl='<p class="small muted">No entries in '+mName+'.</p>';
+  items.forEach(function(x){
+    jl+='<div class="jitem"><div class="jhead"><b>Day '+x.idx+' · '+dLabel(x.date)+'</b><span class="small"><span class="'+cls(x.p)+'">'+pct(x.p,2)+'</span> · '+(x.hit?'<span class="good">✓ hit</span>':'<span class="bad">✗ missed</span>')+(x.w!=null||x.l!=null?' · '+(x.w||0)+'W/'+(x.l||0)+'L':'')+' · <button class="linkbtn" type="button" data-edit="'+x.date+'">Edit</button></span></div>';
+    if(x.np) jl+='<div class="jnote"><span class="l">Pattern</span> '+noteHTML(x.np)+'</div>';
+    if(x.nl) jl+='<div class="jnote"><span class="l">Lost because</span> '+noteHTML(x.nl)+'</div>';
+    if(x.nw) jl+='<div class="jnote"><span class="l">Won because</span> '+noteHTML(x.nw)+'</div>';
+    if(!x.hasNotes) jl+='<div class="jnote muted small">No notes.</div>';
+    jl+='</div>';
+  });
+  $('jList').innerHTML=jl;
+}
+$('monthSeg').addEventListener('click',function(e){ var b=e.target.closest('[data-month]'); if(b){ jMonth=b.dataset.month; renderJournal(); } });
+$('jList').addEventListener('click',function(e){ var b=e.target.closest('[data-edit]'); if(b) selectSession(b.dataset.edit); });
+
+/* ---------- calendar ---------- */
 function groupWeeks(){
   var weeks=[], map={};
   M.days.forEach(function(d){
@@ -898,6 +1157,21 @@ function groupWeeks(){
   });
   return weeks;
 }
+function renderCalendar(){
+  var h='<div></div>'+['Mon','Tue','Wed','Thu','Fri'].map(function(d){return '<div class="wh">'+d+'</div>';}).join('');
+  groupWeeks().forEach(function(wk,wi){
+    h+='<div class="wk">W'+(wi+1)+'</div>';
+    for(var dd=0; dd<5; dd++){
+      var date=addDays(wk.monday,dd), item=wk.byDate[date];
+      if(!item){ h+='<div class="cell empty"></div>'; continue; }
+      var t=new Date(parseD(date)), lab=((t.getUTCDate()===1||date===M.days[0].date)?'<small>'+MON[t.getUTCMonth()]+'</small>':'')+t.getUTCDate();
+      if(item.closed){ h+='<div class="cell closed" data-date="'+date+'" data-closed="1"><span class="d">'+lab+'</span><span class="g tiny">Closed</span></div>'; continue; }
+      var st=item.logged?(item.hit?'hit':'miss'):((item.past||item.assumed)?'gap':'future');
+      h+='<div class="cell '+st+(item.isToday?' today':'')+'" data-date="'+date+'" style="cursor:pointer" tabindex="0" role="button" aria-label="Day '+item.idx+', '+dLabel(date)+'">'+(item.hasNotes?'<span class="nd"></span>':'')+'<span class="d">'+lab+'</span><span class="pc">'+(item.logged?pct(item.p,1):(st==='gap'?'?':''))+'</span></div>';
+    }
+  });
+  $('cal').innerHTML=h;
+}
 $('cal').addEventListener('click',function(e){ var c=e.target.closest('.cell'); if(c&&c.dataset.date&&!c.dataset.closed) selectSession(c.dataset.date); });
 $('cal').addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ var c=e.target.closest('.cell'); if(c&&c.dataset.date&&!c.dataset.closed){ e.preventDefault(); selectSession(c.dataset.date);} } });
 $('cal').addEventListener('pointermove',function(e){
@@ -905,53 +1179,46 @@ $('cal').addEventListener('pointermove',function(e){
   var d=M.days.find(function(x){return x.date===c.dataset.date;}); if(!d) return;
   var h='<div class="t">'+(d.closed?'':'Day '+d.idx+' · ')+dLabel(d.date)+'</div>';
   if(d.closed) h+=tipRow('Market closed',esc(d.holiday));
-  else if(d.actual!=null) h+=tipRow('Balance',usd(d.actual))+tipRow('Return',pct(d.ret,2))+tipRow('Target',usd(d.dayTarget))+tipRow('Result',d.hit?'✓ Hit':'✗ Missed by '+usd(d.gap));
-  else h+=tipRow('Plan balance',usd(d.planEnd))+tipRow('Status',d.past?'Not logged':'Upcoming')+(d.early?tipRow('Note',d.early):'');
+  else if(d.logged) h+=tipRow('Gain',pct(d.p,2))+tipRow('Target',pct(d.req,2))+tipRow('Balance',usd(d.endBal))+(d.w!=null||d.l!=null?tipRow('Trades',(d.w||0)+'W / '+(d.l||0)+'L'):'')+tipRow('Result',d.hit?'✓ Hit':'✗ Missed');
+  else h+=tipRow('Target',pct(d.req,2))+tipRow('Status',d.assumed?'Not logged (0%)':(d.past?'Not logged':'Upcoming'))+(d.early?tipRow('Note',d.early):'');
   showTip(h,e.clientX,e.clientY);
 });
 $('cal').addEventListener('pointerleave',hideTip);
 
 /* ---------- weekly ---------- */
 function renderWeekly(){
-  var weeks=groupWeeks(), r=M.r, h='<thead><tr><th class="l">Week</th><th>Sessions</th><th>Plan end</th><th>Plan growth</th><th>Actual end</th><th>Week return</th><th>Target</th><th class="l">Result</th></tr></thead><tbody>';
   var ny=M.ny.date, wd=dow(ny), curMon=wd===0?addDays(ny,1):wd===6?addDays(ny,2):addDays(ny,-(wd-1));
-  weeks.forEach(function(w,i){
-    var ss=w.sessions; if(!ss.length){ h+='<tr class="closed"><td class="l">W'+(i+1)+' · '+dShort(w.monday)+'</td><td colspan="7" class="l">Market closed all week</td></tr>'; return; }
-    var first=ss[0], lastS=ss[ss.length-1], before=prevLoggedBefore(M,first.idx);
-    var loggedIn=ss.filter(function(x){return x.actual!=null;}), lastL=loggedIn[loggedIn.length-1];
-    var tgtFull=Math.pow(1+r,ss.length)-1;
-    var res='<span class="res na">Upcoming</span>', ret='—', aEnd='—';
-    var weekPast=lastS.past, anyStarted=first.idx<=M.started;
-    if(lastL){
-      var m=lastL.idx-before.idx, wret=lastL.actual/before.bal-1, wtgt=before.bal*Math.pow(1+r,m);
-      ret='<span class="'+cls(wret)+'">'+pct(wret)+'</span>'; aEnd=usd(lastL.actual);
-      var done=lastL.idx===lastS.idx||weekPast;
-      if(done) res=lastL.actual>=wtgt-1e-9?'<span class="res hit">✓ Hit</span>':'<span class="res miss">✗ Missed</span>';
-      else res=lastL.actual>=wtgt-1e-9?'<span class="res hit">◐ On track</span>':'<span class="res miss">◐ Behind</span>';
-    } else if(weekPast){ res='<span class="res gap">? Not logged</span>'; }
-    else if(anyStarted){ res='<span class="res na">◐ In progress</span>'; }
-    var isCur=w.monday===curMon;
-    h+='<tr class="'+(isCur?'is-today':'')+'"><td class="l">W'+(i+1)+' · '+rangeLabel(first.date,lastS.date)+'</td><td>'+ss.length+(w.closed.length?'*':'')+'</td><td>'+usd(lastS.planEnd)+'</td><td>'+pct(lastS.planCum,0)+'</td><td>'+aEnd+'</td><td>'+ret+'</td><td>'+pct(tgtFull)+'</td><td class="l">'+res+'</td></tr>';
+  var h='<thead><tr><th class="l">Week</th><th>Sessions</th><th>Start</th><th>End</th><th>Week gain</th><th>Target</th><th>Trades</th><th>Win rate</th><th class="l">Result</th></tr></thead><tbody>';
+  groupWeeks().forEach(function(w,i){
+    var ss=w.sessions; if(!ss.length){ h+='<tr class="closed"><td class="l">W'+(i+1)+' · '+dShort(w.monday)+'</td><td colspan="8" class="l">Market closed all week</td></tr>'; return; }
+    var first=ss[0], lastS=ss[ss.length-1], hs=ss.filter(function(x){return x.hist;}), lg=ss.filter(function(x){return x.logged;});
+    var tgt=ss.reduce(function(a,x){return a*(1+(x.req||0));},1)-1, ret='—', endB='—', res='<span class="res na">Upcoming</span>';
+    var ww=0, ll=0, has=false; lg.forEach(function(x){ if(x.w!=null||x.l!=null){ has=true; ww+=x.w||0; ll+=x.l||0; } });
+    if(hs.length){
+      var sb=hs[0].startBal, eb=hs[hs.length-1].endBal, r=eb/sb-1, tSoFar=hs.reduce(function(a,x){return a*(1+x.req);},1)-1;
+      ret='<span class="'+cls(r)+'">'+pct(r)+'</span>'; endB=usd(eb);
+      var done=hs.length===ss.length;
+      res=done?(r>=tSoFar-1e-9?'<span class="res hit">✓ Hit</span>':'<span class="res miss">✗ Missed</span>'):(r>=tSoFar-1e-9?'<span class="res hit">◐ On track</span>':'<span class="res miss">◐ Behind</span>');
+    } else if(lastS.past) res='<span class="res gap">? Not logged</span>';
+    else if(first.idx<=M.started) res='<span class="res na">◐ In progress</span>';
+    h+='<tr class="'+(w.monday===curMon?'is-today':'')+'"><td class="l">W'+(i+1)+' · '+rangeLabel(first.date,lastS.date)+'</td><td>'+ss.length+(w.closed.length?'*':'')+'</td><td>'+usdC(first.startBal)+'</td><td>'+endB+'</td><td>'+ret+'</td><td>'+pct(tgt)+'</td><td>'+(has?ww+'W / '+ll+'L':'—')+'</td><td>'+(has&&wr(ww,ll)!=null?Math.round(wr(ww,ll)*100)+'%':'—')+'</td><td class="l">'+res+'</td></tr>';
   });
   $('weekTbl').innerHTML=h+'</tbody>';
-  $('weekNote').textContent='5 sessions at '+M.s.dailyTarget+'% = '+pct(Math.pow(1+r,5)-1)+' per week'+(M.days.some(function(d){return d.closed;})?' · * holiday week':'');
+  $('weekNote').textContent='Target = the daily targets compounded over the week'+(M.days.some(function(d){return d.closed;})?' · * holiday week':'');
 }
 
 /* ---------- milestones ---------- */
 function renderMilestones(){
-  var s=M.s, list=[];
-  // month-end targets
-  var byMonth={}; M.sessions.forEach(function(x){ byMonth[x.date.slice(0,7)]=x; });
-  Object.keys(byMonth).forEach(function(k){ var x=byMonth[k]; list.push({label:'End of '+MON[+k.slice(5,7)-1]+(k.slice(0,4)!==s.startDate.slice(0,4)?' '+k.slice(0,4):''),value:x.planEnd,plan:x,month:true}); });
-  // round numbers
-  [1e3,1e4,1e5,1e6,1e7].forEach(function(v){ if(v>s.startCapital&&v<M.final){ var p=M.sessions.find(function(x){return x.planEnd>=v;}); if(p) list.push({label:usdAxis(v),value:v,plan:p}); } });
+  var s=M.s, list=[], byMonth={};
+  M.sessions.forEach(function(x){ byMonth[monthKey(x.date)]=x; });
+  Object.keys(byMonth).forEach(function(k){ var x=byMonth[k]; list.push({label:'End of '+MON[+k.slice(5,7)-1],value:x.ideal,plan:x,month:true}); });
+  [1e3,1e4,1e5,1e6,1e7].forEach(function(v){ if(v>M.start&&v<M.G*0.999){ var p=M.sessions.find(function(x){return x.ideal>=v;}); if(p) list.push({label:usdAxis(v),value:v,plan:p}); } });
   list.sort(function(a,b){ return a.plan.idx-b.plan.idx||a.value-b.value; });
-  var h='<thead><tr><th class="l">Milestone</th><th>Balance</th><th class="l">Plan date</th><th class="l">Status</th><th>To go</th></tr></thead><tbody>';
+  var h='<thead><tr><th class="l">Milestone</th><th>Balance</th><th class="l">Ideal date</th><th class="l">Status</th><th>To go</th></tr></thead><tbody>';
   list.forEach(function(it){
-    var reached=M.sessions.find(function(x){return x.actual!=null&&x.actual>=it.value;});
-    var st, need;
+    var reached=M.sessions.find(function(x){return x.hist&&x.endBal>=it.value;}), st, need;
     if(reached){ var diff=it.plan.idx-reached.idx; st='<span class="res hit">✓ '+dShort(reached.date)+'</span> <span class="tiny muted">'+(diff>0?plural(diff,'session')+' early':diff<0?plural(-diff,'session')+' late':'on time')+'</span>'; need='—'; }
-    else { var late=it.plan.idx<=M.curIdx; st=late?'<span class="res miss">Behind plan</span>':'<span class="res na">Upcoming</span>'; need=usdC(it.value-M.current)+' <span class="tiny muted">(×'+(it.value/M.current<10?(it.value/M.current).toFixed(1):nf0.format(it.value/M.current))+')</span>'; }
+    else { st=it.plan.idx<=M.lastIdx?'<span class="res miss">Behind</span>':'<span class="res na">Upcoming</span>'; need=usdC(it.value-M.current)+' <span class="tiny muted">(×'+(it.value/M.current<10?(it.value/M.current).toFixed(1):nf0.format(it.value/M.current))+')</span>'; }
     h+='<tr><td class="l">'+(it.month?'<b>'+it.label+'</b>':it.label)+'</td><td>'+usd(it.value)+'</td><td class="l">Day '+it.plan.idx+' · '+dShort(it.plan.date)+'</td><td class="l">'+st+'</td><td>'+need+'</td></tr>';
   });
   $('msTbl').innerHTML=h+'</tbody>';
@@ -959,18 +1226,22 @@ function renderMilestones(){
 
 /* ---------- schedule ---------- */
 function renderSchedule(){
-  var h='<thead><tr><th>Day</th><th class="l">Date</th><th>Plan start</th><th>Target profit</th><th>Plan end</th><th>Plan growth</th><th>Actual</th><th>Return</th><th>Session target</th><th class="l">Result</th><th>vs. plan</th><th></th></tr></thead><tbody>';
+  var h='<thead><tr><th>Day</th><th class="l">Date</th><th>Start</th><th>Target %</th><th>Target balance</th><th>Gain</th><th>End balance</th><th>Trades</th><th>Win rate</th><th class="l">Result</th><th>vs ideal</th><th></th></tr></thead><tbody>';
   M.days.forEach(function(d){
     if(d.closed){ h+='<tr class="closed"><td></td><td class="l">'+dLabel(d.date)+'</td><td colspan="10" class="l">Market closed — '+esc(d.holiday)+'</td></tr>'; return; }
-    var res, rowCls=d.isToday?'is-today':(d.past||d.actual!=null?'':'future');
-    if(d.actual!=null) res=d.hit?'<span class="res hit">✓ Hit</span>':'<span class="res miss">✗ −'+usd(d.gap).replace('−','')+'</span>';
+    var res, rowCls=d.isToday?'is-today':(d.hist?'':'future'), R=wr(d.w||0,d.l||0);
+    if(d.logged) res=d.hit?'<span class="res hit">✓ Hit</span>':'<span class="res miss">✗ −'+((d.req-d.p)*100).toFixed(2)+' pp</span>';
+    else if(d.assumed) res='<span class="res gap">? Not logged (0%)</span>';
     else res=d.past?'<span class="res gap">? Not logged</span>':(d.isToday?'<span class="res na">Today</span>':'<span class="res na">Upcoming</span>');
-    h+='<tr class="'+rowCls+'" data-date="'+d.date+'"><td>'+d.idx+'</td><td class="l">'+dLabel(d.date)+(d.early?' <span class="tiny muted">½</span>':'')+(d.holNote?' <span class="tiny warn" title="'+esc(d.holNote)+'">holiday</span>':'')+'</td><td>'+usd(d.planStart)+'</td><td>'+usd(d.planProfit)+'</td><td>'+usd(d.planEnd)+'</td><td>'+pct(d.planCum,0)+'</td>'+
-      '<td>'+(d.actual!=null?'<b>'+usd(d.actual)+'</b>':'—')+'</td><td>'+(d.actual!=null?'<span class="'+cls(d.ret)+'">'+pct(d.ret,1)+'</span>':'—')+'</td><td>'+(d.actual!=null?usd(d.dayTarget):'—')+'</td><td class="l">'+res+'</td>'+
-      '<td>'+(d.actual!=null?'<span class="'+cls(d.vsPlan)+'">'+pct(d.vsPlan,1)+'</span>':'—')+'</td><td><button class="linkbtn" type="button" data-edit="'+d.date+'">'+(d.actual!=null?'Edit':'Log')+'</button></td></tr>';
+    h+='<tr class="'+rowCls+'"><td>'+d.idx+'</td><td class="l">'+dLabel(d.date)+(d.early?' <span class="tiny muted">½</span>':'')+(d.hasNotes?' <span class="tiny" style="color:var(--accent)" title="Has notes">●</span>':'')+'</td>'+
+      '<td>'+usd(d.startBal)+'</td><td>'+pct(d.req,2)+'</td><td>'+usd(d.targetBal)+'</td>'+
+      '<td>'+(d.logged?'<b class="'+cls(d.p)+'">'+pct(d.p,2)+'</b>':'—')+'</td><td>'+(d.hist?usd(d.endBal):'—')+'</td>'+
+      '<td>'+(d.logged&&(d.w!=null||d.l!=null)?(d.w||0)+'W / '+(d.l||0)+'L':'—')+'</td><td>'+(d.logged&&(d.w!=null||d.l!=null)&&R!=null?Math.round(R*100)+'%':'—')+'</td>'+
+      '<td class="l">'+res+'</td><td>'+(d.hist?'<span class="'+cls(d.vsIdeal)+'">'+pct(d.vsIdeal,1)+'</span>':'—')+'</td>'+
+      '<td><button class="linkbtn" type="button" data-edit="'+d.date+'">'+(d.logged?'Edit':'Log')+'</button></td></tr>';
   });
   $('schedTbl').innerHTML=h+'</tbody>';
-  $('schedNote').textContent=M.N+' sessions from '+dLabel(M.s.startDate,false)+' to '+dLabel(M.s.endDate,false)+' · '+M.logged+' logged · '+M.hits+' hit · '+(M.logged-M.hits)+' missed'+(M.missing?' · '+M.missing+' not logged':'');
+  $('schedNote').textContent=M.N+' sessions · '+M.logged.length+' logged · '+M.hits+' hit · '+(M.logged.length-M.hits)+' missed · future targets assume you hit '+pct(M.required,2)+' every day';
 }
 $('schedTbl').addEventListener('click',function(e){ var b=e.target.closest('[data-edit]'); if(b) selectSession(b.dataset.edit); });
 $('jumpToday').addEventListener('click',function(){
@@ -980,7 +1251,7 @@ $('jumpToday').addEventListener('click',function(){
 
 /* ---------- data ---------- */
 function renderData(){
-  var n=Object.keys(S.entries).length, inRange=M.logged, outside=n-inRange;
+  var n=Object.keys(S.entries).length, outside=n-M.logged.length;
   $('dataNote').textContent=plural(n,'entry')+' saved'+(outside>0?' · '+outside+' outside the current plan range (kept, not shown)':'');
   $('storageBanner').hidden=!!store;
   renderSync();
@@ -990,7 +1261,7 @@ function download(name,text,type){
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
 }
 $('expJson').addEventListener('click',function(){
-  download('compound-tracker-backup-'+M.ny.date+'.json',JSON.stringify({app:'compound-tracker',version:1,exportedAt:new Date().toISOString(),settings:S.settings,entries:S.entries},null,2),'application/json');
+  download('road-to-1m-backup-'+M.ny.date+'.json',JSON.stringify({app:'compound-tracker',version:2,exportedAt:new Date().toISOString(),settings:S.settings,entries:S.entries},null,2),'application/json');
 });
 $('impJson').addEventListener('click',function(){ $('impFile').click(); });
 $('impFile').addEventListener('change',function(){
@@ -998,9 +1269,9 @@ $('impFile').addEventListener('change',function(){
   var rd=new FileReader();
   rd.onload=function(){
     try{
-      var o=JSON.parse(rd.result), ents=cleanEntries(o.entries||o);
+      var o=JSON.parse(rd.result), st=o.settings?cleanSettings(o.settings):S.settings, ents=isLegacy(o.entries)?legacyToPct(o.entries,st.startCapital):cleanEntries(o.entries);
       if(!Object.keys(ents).length&&!o.settings) throw new Error('empty');
-      if(o.settings) setSettings(cleanSettings(o.settings));
+      if(o.settings) setSettings(st);
       Object.keys(ents).forEach(function(d){ setEntry(d,ents[d]); }); refresh(false);
       toast('Imported '+plural(Object.keys(ents).length,'entry'));
     }catch(e){ toast('That file is not a valid backup'); }
@@ -1008,77 +1279,77 @@ $('impFile').addEventListener('change',function(){
   rd.readAsText(f); this.value='';
 });
 $('expCsv').addEventListener('click',function(){
-  var rows=[['Day','Date','Weekday','Status','PlanStart','PlanProfit','PlanEnd','PlanGrowthPct','Actual','ReturnPct','SessionTarget','Result','VsPlanPct']];
+  var rows=[['Day','Date','Weekday','Status','StartBalance','TargetPct','TargetBalance','GainPct','EndBalance','Wins','Losses','WinRatePct','Result','VsIdealPct','Pattern','LossReason','WinReason']];
   M.days.forEach(function(d){
-    if(d.closed){ rows.push(['',d.date,DOW[dow(d.date)],'Closed: '+d.holiday,'','','','','','','','','']); return; }
-    rows.push([d.idx,d.date,DOW[dow(d.date)],'Open',d.planStart.toFixed(2),d.planProfit.toFixed(2),d.planEnd.toFixed(2),(d.planCum*100).toFixed(2),
-      d.actual!=null?d.actual.toFixed(2):'',d.actual!=null?(d.ret*100).toFixed(2):'',d.actual!=null?d.dayTarget.toFixed(2):'',
-      d.actual!=null?(d.hit?'Hit':'Missed'):(d.past?'Not logged':'Upcoming'),d.actual!=null?(d.vsPlan*100).toFixed(2):'']);
+    if(d.closed){ rows.push(['',d.date,DOW[dow(d.date)],'Closed: '+d.holiday,'','','','','','','','','','','','','']); return; }
+    var R=wr(d.w||0,d.l||0);
+    rows.push([d.idx,d.date,DOW[dow(d.date)],d.logged?'Logged':(d.assumed?'Not logged (0%)':(d.past?'Not logged':'Upcoming')),
+      d.startBal!=null?d.startBal.toFixed(2):'',d.req!=null?(d.req*100).toFixed(4):'',d.targetBal!=null?d.targetBal.toFixed(2):'',
+      d.logged?(d.p*100).toFixed(4):'',d.hist?d.endBal.toFixed(2):'',d.logged&&d.w!=null?d.w:'',d.logged&&d.l!=null?d.l:'',d.logged&&R!=null?(R*100).toFixed(1):'',
+      d.logged?(d.hit?'Hit':'Missed'):'',d.hist?(d.vsIdeal*100).toFixed(2):'',d.np||'',d.nl||'',d.nw||'']);
   });
-  download('compound-schedule-'+M.ny.date+'.csv',rows.map(function(r){return r.map(function(c){c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(',');}).join('\n'),'text/csv');
+  download('road-to-1m-schedule-'+M.ny.date+'.csv',rows.map(function(r){return r.map(function(c){c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(',');}).join('\n'),'text/csv');
 });
 $('clearAll').addEventListener('click',function(){
-  if(!Object.keys(S.entries).length){ toast('Nothing to clear'); return; }
-  if(!window.confirm('Delete all '+Object.keys(S.entries).length+' logged balances'+(SY.key?' on every linked device':' from this browser')+'? Export a backup first if you might need them.')) return;
+  var n=Object.keys(S.entries).length; if(!n){ toast('Nothing to clear'); return; }
+  if(!window.confirm('Delete all '+n+' logged sessions (including notes)'+(SY.key?' on every linked device':' from this browser')+'? Export a backup first if you might need them.')) return;
   Object.keys(S.entries).forEach(function(d){ delEntry(d); }); refresh(false); toast('All entries cleared');
 });
 
 /* ---------- settings ---------- */
 var dlg=$('setDlg');
-function fillSettings(s){ $('sCap').value=s.startCapital; $('sRate').value=s.dailyTarget; $('sStart').value=s.startDate; $('sEnd').value=s.endDate; $('sHol').checked=!!s.skipHolidays; $('setErr').textContent=''; }
+function fillSettings(s){ $('sGoal').value=s.goal; $('sCap').value=s.startCapital; $('sStart').value=s.startDate; $('sEnd').value=s.endDate; $('sHol').checked=!!s.skipHolidays; $('setErr').textContent=''; }
 $('settingsBtn').addEventListener('click',function(){ fillSettings(S.settings); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute('open',''); });
 $('setCancel').addEventListener('click',function(){ dlg.close?dlg.close():dlg.removeAttribute('open'); });
 $('setReset').addEventListener('click',function(){ fillSettings(DEFAULTS); });
 $('setSave').addEventListener('click',function(){
-  var cap=+$('sCap').value, rate=+$('sRate').value, a=$('sStart').value, b=$('sEnd').value, err='';
-  if(!(cap>0)) err='Starting capital must be above 0.';
-  else if(!(rate>0&&rate<=500)) err='Daily target must be between 0.1% and 500%.';
+  var goal=+$('sGoal').value, cap=+$('sCap').value, a=$('sStart').value, b=$('sEnd').value, err='';
+  if(!(goal>0)) err='Goal must be above 0.';
+  else if(!(cap>0)) err='Starting capital must be above 0.';
   else if(!ISO.test(a)||!ISO.test(b)) err='Pick both dates.';
   else if(b<a) err='Goal date must be after the first session.';
   else if((parseD(b)-parseD(a))/DAY>800) err='Keep the range under about two years.';
   if(err){ $('setErr').textContent=err; return; }
-  setSettings({startCapital:Math.round(cap*100)/100,dailyTarget:rate,startDate:a,endDate:b,skipHolidays:$('sHol').checked}); dlg.close?dlg.close():dlg.removeAttribute('open'); refresh(false); toast('Plan updated');
+  setSettings({goal:Math.round(goal*100)/100,startCapital:Math.round(cap*100)/100,startDate:a,endDate:b,skipHolidays:$('sHol').checked});
+  dlg.close?dlg.close():dlg.removeAttribute('open'); refresh(false); toast('Goal updated');
 });
 
-/* ---------- scale toggle ---------- */
-document.querySelectorAll('[data-scale]').forEach(function(b){
-  b.addEventListener('click',function(){
-    scaleMode=b.dataset.scale; sset(SCALE_KEY,scaleMode);
-    document.querySelectorAll('[data-scale]').forEach(function(o){ o.setAttribute('aria-pressed',String(o.dataset.scale===scaleMode)); });
-    drawBalance();
-  });
-  b.setAttribute('aria-pressed',String(b.dataset.scale===scaleMode));
-});
-
-function syncRangeBtns(){ document.querySelectorAll('[data-range]').forEach(function(o){ o.setAttribute('aria-pressed',String(o.dataset.range===rangeMode)); }); }
-document.querySelectorAll('[data-range]').forEach(function(b){
-  b.addEventListener('click',function(){ rangeMode=b.dataset.range; sset(RANGE_KEY,rangeMode); syncRangeBtns(); drawCharts(); });
-});
-syncRangeBtns();
-
+/* ---------- chart toggles ---------- */
+function syncSegs(){
+  document.querySelectorAll('[data-scale]').forEach(function(o){ o.setAttribute('aria-pressed',String(o.dataset.scale===scaleMode)); });
+  document.querySelectorAll('[data-range]').forEach(function(o){ o.setAttribute('aria-pressed',String(o.dataset.range===rangeMode)); });
+}
+document.querySelectorAll('[data-scale]').forEach(function(b){ b.addEventListener('click',function(){ scaleMode=b.dataset.scale; sset(SCALE_KEY,scaleMode); syncSegs(); drawBalance(); }); });
+document.querySelectorAll('[data-range]').forEach(function(b){ b.addEventListener('click',function(){ rangeMode=b.dataset.range; sset(RANGE_KEY,rangeMode); syncSegs(); drawCharts(); }); });
+syncSegs();
 
 /* ---------- cloud sync (Supabase) ---------- */
 var syncing=false, syncAgain=false, syncTimer=null, retryMs=0, SS={st:'off',msg:''};
-function setEntry(date,v){ v=Math.round(Number(v)*100)/100; S.entries[date]=v; PD.ops[date]={balance:v}; savePD(); persist(); scheduleSync(); }
+function opFor(e){ var o={pct:e.p}; if(e.w!=null) o.wins=e.w; if(e.l!=null) o.losses=e.l; if(e.np) o.np=e.np; if(e.nl) o.nl=e.nl; if(e.nw) o.nw=e.nw; return o; }
+function setEntry(date,e){ e=cleanEntry(e); if(!e) return; S.entries[date]=e; PD.ops[date]=opFor(e); savePD(); persist(); scheduleSync(); }
 function delEntry(date){ delete S.entries[date]; PD.ops[date]={del:true}; savePD(); persist(); scheduleSync(); }
 function setSettings(st){ S.settings=st; PD.setVer=(PD.setVer|0)+1; savePD(); persist(); scheduleSync(); }
 function pendingCount(){ return Object.keys(PD.ops).length+((PD.setVer|0)>(PD.setSent|0)?1:0); }
-function scheduleSync(ms){ if(!SY.key) { renderSync(); return; } clearTimeout(syncTimer); syncTimer=setTimeout(doSync,ms==null?350:ms); }
+function scheduleSync(ms){ if(!SY.key){ renderSync(); return; } clearTimeout(syncTimer); syncTimer=setTimeout(doSync,ms==null?350:ms); }
 function rpc(body){
   var ctl=window.AbortController?new AbortController():null, t=ctl?setTimeout(function(){ctl.abort();},15000):null;
-  return fetch(SB_URL+'/rest/v1/rpc/tracker_sync',{method:'POST',cache:'no-store',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined})
+  return fetch(SB_URL+SB_RPC,{method:'POST',cache:'no-store',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined})
     .then(function(r){ return r.text().then(function(tx){ var j=null; try{ j=JSON.parse(tx); }catch(e){}
       if(!r.ok){ var er=new Error((j&&j.message)||('HTTP '+r.status)); er.code=j&&j.code; er.status=r.status; throw er; } return j; }); })
     .finally(function(){ if(t) clearTimeout(t); });
 }
 function applyRemote(res){
-  var before=JSON.stringify([S.entries,S.settings]), e={};
-  (res&&res.entries||[]).forEach(function(r){ if(r&&!r.del&&r.balance!=null&&ISO.test(r.date)&&isFinite(+r.balance)) e[r.date]=Math.round(+r.balance*100)/100; });
-  Object.keys(PD.ops).forEach(function(d){ var o=PD.ops[d]; if(o.del) delete e[d]; else e[d]=o.balance; });
+  var before=JSON.stringify([S.entries,S.settings,S.reviews]), e={};
+  (res&&res.entries||[]).forEach(function(r){
+    if(!r||r.del||r.pct==null||!ISO.test(r.date)) return;
+    var c=cleanEntry({p:+r.pct,w:r.wins,l:r.losses,np:r.np,nl:r.nl,nw:r.nw}); if(c) e[r.date]=c;
+  });
+  Object.keys(PD.ops).forEach(function(d){ var o=PD.ops[d]; if(o.del) delete e[d]; else { var c=cleanEntry({p:o.pct,w:o.wins,l:o.losses,np:o.np,nl:o.nl,nw:o.nw}); if(c) e[d]=c; } });
   S.entries=e;
   if(res&&res.settings&&typeof res.settings==='object'&&(PD.setVer|0)<=(PD.setSent|0)) S.settings=cleanSettings(res.settings);
+  if(res&&Array.isArray(res.reviews)) S.reviews=cleanReviews(res.reviews);
   persist();
-  return JSON.stringify([S.entries,S.settings])!==before;
+  return JSON.stringify([S.entries,S.settings,S.reviews])!==before;
 }
 function doSync(){
   if(!SY.key){ setSS('off'); return Promise.resolve(); }
@@ -1086,11 +1357,10 @@ function doSync(){
   syncing=true; setSS('busy');
   var first=!SY.firstDone;
   var p=first?rpc({p_key:SY.key,p_ops:[],p_settings:null}).then(function(res){
-      // First link on this device: upload what only this device has; the cloud wins on conflicts.
       var remote={}; (res.entries||[]).forEach(function(r){ remote[r.date]=r; });
-      Object.keys(S.entries).forEach(function(d){ if(!remote[d]&&!PD.ops[d]) PD.ops[d]={balance:S.entries[d]}; });
+      Object.keys(S.entries).forEach(function(d){ if(!remote[d]&&!PD.ops[d]) PD.ops[d]=opFor(S.entries[d]); });
       if(!res.settings) PD.setVer=(PD.setSent|0)+1;
-      else if((PD.setVer|0)>(PD.setSent|0)) PD.setSent=PD.setVer; // adopt cloud settings
+      else if((PD.setVer|0)>(PD.setSent|0)) PD.setSent=PD.setVer;
       savePD(); return res;
     }):Promise.resolve(null);
   return p.then(function(){
@@ -1110,13 +1380,10 @@ function doSync(){
     if(e&&e.code==='28000'){ SY.err='badkey'; saveSY(); setSS('badkey'); }
     else { setSS('err',(navigator.onLine===false)?'You are offline':((e&&e.name==='AbortError')?'Timed out':(e&&e.message)||'Network error'));
       retryMs=Math.min(retryMs?retryMs*2:15000,300000); scheduleSync(retryMs); }
-  }).finally(function(){
-    syncing=false;
-    if(syncAgain){ syncAgain=false; scheduleSync(50); }
-  });
+  }).finally(function(){ syncing=false; if(syncAgain){ syncAgain=false; scheduleSync(50); } });
 }
 function setSS(st,msg){ SS={st:st,msg:msg||''}; renderSync(); }
-function hhmm(iso){ try{ var d=new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(new Date().toDateString()===d.toDateString()?'':' '+d.toLocaleDateString([], {month:'short',day:'numeric'})); }catch(e){ return ''; } }
+function hhmm(isoStr){ try{ var d=new Date(isoStr); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+(new Date().toDateString()===d.toDateString()?'':' '+d.toLocaleDateString([], {month:'short',day:'numeric'})); }catch(e){ return ''; } }
 function renderSync(){
   if(!$('syncStatus')) return;
   var linked=!!SY.key, pc=pendingCount(), st=SS.st, dot='', head='', sub='', chip='';
@@ -1143,10 +1410,7 @@ function showPair(){
     sc.onload=draw; sc.onerror=function(){ q.textContent='QR unavailable — use Copy'; }; document.head.appendChild(sc);
   }
 }
-function parseKey(str){
-  str=String(str||'').trim(); var m=str.match(/[#&?]k=([A-Za-z0-9_-]{32,200})/); if(m) return m[1];
-  return /^[A-Za-z0-9_-]{32,200}$/.test(str)?str:null;
-}
+function parseKey(str){ str=String(str||'').trim(); var m=str.match(/[#&?]k=([A-Za-z0-9_-]{32,200})/); if(m) return m[1]; return /^[A-Za-z0-9_-]{32,200}$/.test(str)?str:null; }
 function linkWith(key){
   if(SY.key===key&&SY.firstDone){ toast('This device is already linked'); doSync(); return; }
   SY={key:key,firstDone:false,last:null,err:null}; saveSY(); renderSync(); toast('Linking this device…');
@@ -1171,29 +1435,27 @@ document.addEventListener('visibilitychange',function(){ if(document.visibilityS
 window.addEventListener('online',function(){ if(SY.key){ retryMs=0; scheduleSync(100); } });
 window.addEventListener('focus',function(){ if(SY.key) scheduleSync(300); });
 setInterval(function(){ if(SY.key&&document.visibilityState==='visible'&&!syncing) doSync(); },45000);
-function takeHashKey(){ // pairing link: #k=<key>
+function takeHashKey(){
   var k=parseKey(location.hash);
   if(k){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; } linkWith(k); return true; }
   return false;
 }
 window.addEventListener('hashchange',takeHashKey);
-if(!takeHashKey()&&SY.key) scheduleSync(50);
 
 /* ---------- orchestrate ---------- */
-function drawCharts(){ drawBalance(); drawReturns(); }
+function drawCharts(){ drawBalance(); drawPct(); drawWL(); }
 function refresh(keepSel){
   M=model();
-  renderHeader(); renderForm(keepSel); renderVerdict(); renderKPIs(); renderStats();
-  renderCalendar(); renderWeekly(); renderMilestones(); renderSchedule(); renderData(); drawCharts();
+  renderHeader(); renderForm(keepSel); renderVerdict(); renderKPIs(); renderScenarios(); renderWLStats(); renderStats();
+  renderJournal(); renderWeekly(); renderCalendar(); renderMilestones(); renderSchedule(); renderData(); drawCharts();
 }
 applyTheme(); refresh(false);
+if(!takeHashKey()&&SY.key) scheduleSync(50);
 var lastW=0;
 if(window.ResizeObserver){ new ResizeObserver(function(en){ var w=en[0].contentRect.width; if(Math.abs(w-lastW)>2){ lastW=w; drawCharts(); } }).observe($('balChart')); }
 else window.addEventListener('resize',drawCharts);
 if(window.matchMedia) try{ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawCharts); }catch(e){}
-// keep the clock and "today" fresh
-setInterval(function(){ var before=M.ny.date+'|'+M.elapsed+'|'+M.started; var ny=nyNow(); M.ny=ny; renderHeader();
-  var nm=model(); if(nm.ny.date+'|'+nm.elapsed+'|'+nm.started!==before) refresh(true); },60000);
+setInterval(function(){ var before=M.ny.date+'|'+M.elapsed+'|'+M.started; var nm=model(); if(nm.ny.date+'|'+nm.elapsed+'|'+nm.started!==before) refresh(true); else { M.ny=nm.ny; renderHeader(); } },60000);
 window.addEventListener('storage',function(e){
   if(e.key===KEY){ S=load(); refresh(true); }
   else if(e.key===SYNC_KEY){ SY=loadJSON(SYNC_KEY,{})||{}; renderSync(); }
