@@ -1,19 +1,19 @@
 # Road to $1M — Compound Tracker
 
-Personal dashboard for growing a US stock portfolio to $1,000,000 by Dec 31, 2026
-(NYSE trading days only).
+Personal dashboard that answers two questions every trading day:
 
-- **Dynamic daily target.** Each session's target % is recalculated from the current
-  balance: (goal ÷ balance)^(1 ÷ sessions left) − 1. Miss a day and the target rises;
-  beat it and the target falls.
-- **Input = daily % gain**, plus win/lost trade counts. The balance is calculated
-  automatically by compounding the daily % from the starting capital.
-- **Statistics:** on-track status vs. the ideal path, required % per day, pace and
-  $1M ETA, what-if table, green/red days, drawdown, win rate and more.
-- **Journal:** per-session notes (pattern recognized, why trades lost, why trades won,
-  with #tags). Each month gets an automatic in-page summary, and on the 1st of every
-  month Claude writes a review of the previous month's notes.
-- **Sync:** data syncs across devices through a private Supabase database. Each device
-  is linked once with a secret sync link (QR code in "Sync & backup"); only a hash of
-  that secret is stored, and the tables are closed to the public API. Nothing personal
-  is stored in this repository. Changes are kept in the browser first, so it works offline.
+1. **What do I need today?** The target % and $ profit for the next session, recalculated
+   from the current balance: (goal ÷ balance)^(1 ÷ sessions left) − 1.
+2. **How did it go?** A daily evaluation: gain vs target, profit vs target, win / lost
+   trades, and journal notes.
+
+Features
+- Log each session as **% gain or $ profit**, plus win / lost trades and notes (#tags).
+- **Deposits, withdrawals and adjustments**: applied before that day's session. They move the
+  balance and the target but are kept separate from trading P&L and return.
+- Evaluation by week / month / all time, with automatic insights.
+- Day-by-day history and upcoming targets; balance, daily % and trades charts.
+- Journal with an automatic monthly summary, and a monthly review written by Claude on the
+  1st of each month.
+- Private sync across devices through Supabase (secret link / QR; only a hash is stored and
+  the tables are closed to the public API). Nothing personal is stored in this repository.
